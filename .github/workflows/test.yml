@@ -24,7 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: npm ci
       - name: Prepare pinned backend
         run: node --input-type=module -e "import {setup} from './scripts/setup.js'; await setup({withGame:false});"
       - run: node scripts/prepare-extractor.mjs
       - run: npm test
+      - name: Test Windows desktop startup and UI
+        run: npm run test:desktop
