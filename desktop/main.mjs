@@ -5,10 +5,14 @@ import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateOptions, normalizeSettings, links } from './options.mjs';
+import { configureCompatibility, createStartupLog, loadWindow } from './startup.mjs';
+
+const crossover = configureCompatibility(app);
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const uiURL = pathToFileURL(path.join(directory, 'ui', 'index.html')).href;
 app.setPath('userData', process.env.LAUNCHER_TEST_DATA || path.join(app.getPath('appData'), 'FortniteLauncher'));
+const startupLog = createStartupLog(app.getPath('userData'));
 let window, worker, workspace = path.resolve(directory, '..'), closing = false, finished = Promise.resolve();
 let choosingDownloadFolder = false;
 const state = { busy: false, phase: 'idle', message: 'Ready when you are.', events: [], addresses: [], progress: null, installedPath: null, version: app.getVersion() };
@@ -83,7 +87,9 @@ function handle(name, callback) {
 }
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 else {
-  app.on('second-instance', () => { if (window?.isMinimized()) window.restore(); window?.focus(); });
+  startupLog.write('starting', { version: app.getVersion(), electron: process.versions.electron, platform: process.platform, arch: process.arch, crossover });
+  app.on('child-process-gone', (_event, details) => startupLog.write('child-process-gone', { type: details.type, reason: details.reason, exitCode: details.exitCode }));
+  app.on('second-instance', () => { if (window?.isMinimized()) window.restore(); window?.show(); window?.focus(); });
   app.on('before-quit', event => {
     if (worker && !closing) { event.preventDefault(); closing = true; stop().finally(() => app.quit()); }
   });
@@ -127,15 +133,25 @@ else {
   handle('close', () => window.close());
   window = new BrowserWindow({ width: 1200, height: 820, minWidth: 940, minHeight: 700, backgroundColor: '#0b0c12', title: 'NOVA DROP',
     icon: app.isPackaged ? path.join(process.resourcesPath, 'icon.png') : path.join(directory, '..', 'build', 'icon.png'),
-    autoHideMenuBar: true, frame: false, show: false,
+    autoHideMenuBar: true, frame: false, show: crossover,
     webPreferences: { preload: path.join(directory, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.webContents.session.setPermissionRequestHandler((_wc, _permission, done) => done(false));
   window.webContents.session.setPermissionCheckHandler(() => false);
+  window.webContents.on('preload-error', (_event, _file, error) => startupLog.write('preload-error', { message: error.message }));
+  window.webContents.on('did-fail-load', (_event, code, description, _url, mainFrame) => startupLog.write('did-fail-load', { code, description, mainFrame }));
+  window.webContents.on('render-process-gone', (_event, details) => startupLog.write('render-process-gone', { reason: details.reason, exitCode: details.exitCode }));
+  window.on('unresponsive', () => startupLog.write('window-unresponsive'));
   window.on('close', event => { if (worker) { event.preventDefault(); if (!closing) { closing = true; stop().finally(() => window.destroy()); } } });
   app.on('window-all-closed', () => app.quit());
-  await window.loadURL(uiURL);
+  await loadWindow(window, uiURL, startupLog.write);
   window.show();
-  }).catch(error => { console.error(error); app.exit(1); });
+  }).catch(error => {
+    startupLog.write('startup-failed', { message: error.message });
+    console.error(error);
+    // Closing during startup is deliberate; do not reopen a dialog for that case.
+    if (!window?.isDestroyed()) dialog.showErrorBox('NOVA DROP could not start', `${error.message}\n\nDiagnostics: ${startupLog.file}`);
+    app.exit(1);
+  });
 }
