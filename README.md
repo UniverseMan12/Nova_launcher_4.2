@@ -13,6 +13,10 @@ Your selected outfit, backpack, pickaxe, glider and emotes are saved outside the
 
 After updating, **What’s new** appears once with the changes for the installed version. Close it with **Let’s play**, the close button or Escape; reopen it from the sidebar at any time.
 
+![The update changelog, with rounded corners and a blurred launcher behind it](docs/launcher-changelog.png)
+
+The launcher and update paths have automated Windows coverage. The new Auto-Sprint, in-match cosmetics and full-reset behavior still need a real Fortnite match test; see [current validation](RELEASE_QA.md).
+
 ## Download the game in the launcher
 
 On **Play**, the main button says **Download Fortnite 4.2** when no game folder is selected. Click it and choose an installation location. Progress and **Cancel installation** stay on the Play screen. The launcher downloads the owner-provided 8.3 GiB archive, verifies its pinned SHA-256 checksum, extracts only the game files and automatically finds and selects the folder containing **FortniteGame** and **Engine**. The main button then becomes **Launch Fortnite** (or Host & play / Join friend). Already installed? Use **Choose folder** directly below the main controls. Allow about **32 GiB free space** during installation; the downloaded archive is removed after success.
@@ -48,7 +52,7 @@ For **0.4.3**, choose **[NOVA-DROP-0.4.3-x64-nsis.exe](https://github.com/Univer
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
 3. Click **Launch Fortnite**. Components are prepared automatically. First use needs internet access.
-4. When hosting, choose your playlist in Reboot and click **Start server**. Press **Play** in Fortnite. Start **Bus Countdown** when everyone is on the island.
+4. When hosting, Reboot opens with the selected mode already set. Click **Start server**, then press **Play** in Fortnite. Start **Bus Countdown** when everyone is on the island.
 
 **EXE requirements:** Windows 10/11 x64, Fortnite 4.2 files, and the [Visual C++ x64 runtime](https://aka.ms/vc14/vc_redist.x64.exe). **Node.js and Git are not needed by EXE users**: Electron supplies the JavaScript runtime and the backend source/dependencies are included. Some pinned upstream DLLs download directly on first use. Game files and Hamachi are separate. Settings and runtime data live under `%APPDATA%/FortniteLauncher`, so the install directory can remain read-only. The portable EXE also uses this per-user data directory.
 
@@ -72,7 +76,7 @@ For the **source/CMD launchers**, use a **Windows 10/11 x64** PC with internet a
 | **[Git for Windows](https://git-scm.com/install/windows)** | **x64 Setup**. Keep Git available from the command line; the launcher uses it to download the backend. |
 | **[Microsoft Visual C++ Runtime — x64](https://aka.ms/vc14/vc_redist.x64.exe)** | Run the installer and choose Install or Repair if needed. [Microsoft download information](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). |
 | **[Fortnite 4.2 — Google Drive](https://drive.google.com/file/d/1m8VEUcKnxA0UYHt5-txPbRhfbn0OVhEm/view?usp=sharing)** | Download and fully extract the game. Link supplied by the project owner. |
-| **[Launcher — Download ZIP](https://github.com/UniverseMan12/fortnite-4-2-launcher/archive/refs/heads/main.zip)** | Extract the ZIP, then open the folder containing **START.cmd**. |
+| **[Launcher — Download ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/heads/main.zip)** | Extract the ZIP, then open the folder containing **START.cmd**. |
 | [Hamachi](https://vpn.net/) — for multiplayer over the internet | Install on every player's PC and join the same private network. An existing Radmin VPN connection or the same LAN also works with the launcher. |
 | [7-Zip](https://www.7-zip.org/download.html) — optional | Choose **64-bit Windows x64** if you need an extractor for the game archive. |
 | [DirectX legacy runtime](https://www.microsoft.com/en-us/download/details.aspx?id=35) — if needed | Install if the game reports missing legacy DirectX files such as **XINPUT1_3.dll** or **D3DX9_43.dll**. |
