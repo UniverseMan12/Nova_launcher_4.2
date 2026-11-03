@@ -8,6 +8,7 @@ Regular Windows x64 update for Fortnite 4.2 / CL-4072250.
 - Uses the new artwork in the sidebar, startup screen, Windows application icon, installer and portable launcher.
 - Matches the startup glow to the teal logo and refreshes the launcher preview.
 - Updates the displayed version and download filenames to 0.4.1.
+- Fixes the pinned server download address after the GitHub repository rename; the server file and its checksum remain the same.
 
 This release builds on the regular 0.4.0 version. Classic, ordinary Thanos, Infinity Showdown, the game download on Play and private VPN/LAN multiplayer remain available. Existing settings and the saved game-folder location are kept. The separate bot-lobby prototype is not included in this logo update.
 
