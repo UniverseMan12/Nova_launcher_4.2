@@ -3,7 +3,7 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*NOVA DROP [0.4.1](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.1) is the current regular release, featuring the new teal orbit logo in the launcher and Windows app icon.*
+*NOVA DROP [0.4.2](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.2) is the current regular release, with built-in launcher updates. Choose when to download, install and restart.*
 
 ## Download the game in the launcher
 
@@ -35,7 +35,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For **0.4.1**, choose **NOVA-DROP-0.4.1-x64-nsis.exe** to install, or **NOVA-DROP-0.4.1-x64-portable.exe** to run without installing. The [Releases page](https://github.com/UniverseMan12/fortnite-4-2-launcher/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
+For **0.4.2**, choose **[NOVA-DROP-0.4.2-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.2-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
@@ -46,7 +46,7 @@ For **0.4.1**, choose **NOVA-DROP-0.4.1-x64-nsis.exe** to install, or **NOVA-DRO
 
 The release executables are **unsigned**. See [release checks and known limits](RELEASE_QA.md) before distributing them. The 0.4.2 update feature verifies the download size and SHA-256 against the GitHub release; it is not a publisher signature. The launcher does not modify the firewall.
 
-## Launcher updates — coming in 0.4.2
+## Launcher updates — available from 0.4.2
 
 Open **Launcher updates** in the sidebar to check whenever you want. The launcher also checks at startup; switch off **Check when the launcher starts** if you prefer manual checks. An available update appears above Play. Choose **Download update**, then **Update and restart** when ready, or **Later** to keep playing. Downloads can be cancelled and a completed, verified package can be installed later.
 

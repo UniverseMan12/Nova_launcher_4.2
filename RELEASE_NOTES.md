@@ -1,6 +1,6 @@
 # NOVA DROP 0.4.2 — launcher updates
 
-Update candidate for Windows x64 and Fortnite 4.2 / CL-4072250. Based on the regular 0.4.1 release, with its teal orbit logo and existing gameplay. The separate bot-lobby prototype is not included.
+Regular Windows x64 update for Fortnite 4.2 / CL-4072250. Based on the regular 0.4.1 release, with its teal orbit logo and existing gameplay. The separate bot-lobby prototype is not included.
 
 ## Update when you choose
 
@@ -20,4 +20,10 @@ Windows 10/11 x64 and the Visual C++ x64 runtime are required. Node.js and Git a
 
 Executables remain unsigned. Updates require access to GitHub and write access to the launcher location; the normal per-user installer and a writable portable folder are supported. An update is never scheduled for unattended installation. GitHub checks can be delayed by rate limits or network outages.
 
-Classic, ordinary Thanos and Infinity Showdown retain their existing behavior and limits. See [RELEASE_QA.md](https://github.com/UniverseMan12/Nova_launcher_4.2/blob/codex/launcher-updater/RELEASE_QA.md) for the validation record.
+Classic, ordinary Thanos and Infinity Showdown retain their existing behavior and limits. See [RELEASE_QA.md](https://github.com/UniverseMan12/Nova_launcher_4.2/blob/v0.4.2/RELEASE_QA.md) for the validation record.
+
+## Validation
+
+60 Node tests and 15 desktop UI tests passed. Real 0.4.1-to-0.4.2 upgrades passed for both the installed and portable editions on an isolated Windows runner, including restart, retained settings/game paths and folders with spaces and special characters. The EXEs are the unchanged, checksum-verified artifacts from [build 41681911937](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41681911937).
+
+The included `launcher-updates.png` demonstrates the update controls with a fictional 0.4.3 offer; the version released here is **0.4.2**.
