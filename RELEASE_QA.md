@@ -5,7 +5,10 @@
 - Scope: the owner-supplied teal orbit-and-star logo, matching startup glow, Windows icon, updated launcher preview and 0.4.1 version labels. Based on the regular 0.4.0 release; the separate bot-lobby prototype is excluded as requested.
 - The PNG is preserved byte-for-byte, including transparency: SHA-256 `00af8064ff12420a511ab0c7d3d34d8d2d4d05d8d9ccf3f02fb5f973149b9229`.
 - Retains the regular native game-server build `1562a467694f98444c16ee2284a1eff5057f2b81` and its existing gameplay validation/limitations below.
-- Windows CI release validation and verified artifact checksums will be recorded here before publication.
+- [Windows release build 41670941135](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41670941135) built `6ae32eccd6c15e7fa553156ff511c60d26bf9286`. **45 Node tests and 13 desktop tests passed.** Packaged and portable smoke tests passed payload preparation, build detection, first-use setup, UI/artwork loading, invalid-input handling and clean close on GitHub's Windows runner.
+- The CI stage contains **852 verified runtime files**. The native DLL is still `ea242ca57d74ebb0d39cbabba71ef5ba58787b828da39455904fc57afe70cef2`. A stale artifact URL under the old repository name returned 404 during the first candidate build; 0.4.1 uses the current repository URL with the original archive and DLL checksums.
+- Artifact `13249391349` matched GitHub's ZIP SHA-256 `e825a86eafb0b58afa6b629377ecfe61bebd799c1c98cf4726badfbd6a54457d`. Both EXEs matched the CI checksum file: installer `a7e0d1c4c9e4723b0733f5bfd8155feb0a3ba76f4c85c8ed73a18811361fa540`, portable `8ae100d149bebeacf18301b93c571e997730983d555df73659d671da0d42070a`.
+- Both Windows executables report product/file version **0.4.1**, product name **NOVA DROP**, and their extracted Windows icons show the new teal emblem. The CI screenshot was visually checked and copied to the README preview. The publication commit changes only this QA record and that screenshot after the tested source.
 
 ## NOVA DROP 0.4.0 — regular release
 
