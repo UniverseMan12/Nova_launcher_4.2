@@ -3,8 +3,8 @@ import path from 'node:path';
 import {isNewer, versionParts} from './updates.mjs';
 
 export const changes = Object.freeze([
-  {title:'Movement fixes — ready to test', text:'Updated Auto-Sprint handling for stopping and starting again. Please check movement on foot and while gliding.'},
-  {title:'Your outfit, in the match', text:'The local player now reads the saved lobby outfit, glider and pickaxe. Friends retain their own loadouts.'},
+  {title:'Auto-Sprint — second test', text:'Separate movement and sprint inputs. Please check repeated starts, stops and gliding. The HUD-scale Apply crash is still under investigation.'},
+  {title:'Your outfit, in the match', text:'Black Knight, Cloud Strike and the selected pickaxe appeared in the local test. Multiplayer loadouts still need a separate check.'},
   {title:'Character proportions', text:'Corrected the body-part layout and skeleton selection used when spawning and resetting out of Thanos.'},
   {title:'Practice tools retained', text:'Clear inventory and practice respawn remain available. This build needs an in-game check before the fixes are confirmed.'}
 ]);

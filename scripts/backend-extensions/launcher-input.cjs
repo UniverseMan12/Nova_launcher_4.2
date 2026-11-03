@@ -61,6 +61,7 @@ function parse(buffer) {
   if (top.end !== buffer.length && !(top.end + 4 === buffer.length && buffer.readUInt32LE(top.end) === 0)) throw Error("Unexpected settings archive trailer.");
   const array = top.items.find(x => x.name === 'UserActionBindings');
   const sprint = [];
+  const reservedConflicts = [];
   let elements;
   if (array) {
     if (array.type !== 'ArrayProperty' || array.inner !== 'StructProperty') throw Error('Unsupported input bindings.');
@@ -74,7 +75,16 @@ function parse(buffer) {
         const row = list(p, elements.end); p = row.end;
         const action = row.items.find(x => x.name === 'ActionName');
         if (action?.type !== 'NameProperty') throw Error('Missing input action.');
-        if (string(action.body, action.end).value === 'Sprint') {
+        const actionName = string(action.body, action.end).value;
+        if (actionName !== 'Sprint') for (const name of ['KeyBind1','KeyBind2']) {
+          const binding = row.items.find(x => x.name === name);
+          if (!binding) continue;
+          if (binding.struct !== 'Key') throw Error('Unsupported action key.');
+          const keyName = list(binding.body, binding.end).items.find(x=>x.name==='KeyName');
+          if (keyName?.type !== 'NameProperty') throw Error('Missing action key name.');
+          if (string(keyName.body,keyName.end).value === 'F6') reservedConflicts.push(actionName);
+        }
+        if (actionName === 'Sprint') {
           const key = row.items.find(x => x.name === 'KeyBind2');
           if (!key || key.struct !== 'Key') throw Error('Missing secondary sprint key.');
           const keyName = list(key.body, key.end).items.find(x => x.name === 'KeyName');
@@ -87,7 +97,7 @@ function parse(buffer) {
   }
   const toggle = top.items.find(x => x.name === 'bToggleSprint');
   if (toggle && (toggle.type !== 'BoolProperty' || buffer[toggle.boolOffset] > 1)) throw Error('Invalid sprint toggle.');
-  return {array, elements, sprint, toggle, end: top.items.at(-1).start};
+  return {array, elements, sprint, toggle, reservedConflicts, end: top.items.at(-1).start};
 }
 function rewrite(buffer, {key, toggle}) {
   const parsed = parse(buffer), changes = [], sizes = new Map();
@@ -115,14 +125,16 @@ function autoSprint(buffer) {
   const value = buffer?.length ? buffer : seed();
   const data = parse(value);
   if (data.sprint.length > 1) throw Error("Ambiguous sprint bindings.");
-  // The native preset supplies Sprint+W when no user override exists.
-  return rewrite(value, {key: data.sprint.length ? 'W' : undefined, toggle: false});
+  if (data.reservedConflicts.length) throw Error('F6 is already assigned to another action. Free that secondary key in Fortnite before enabling Auto-Sprint.');
+  // W must never be bound to both an action and the movement axis. The scoped
+  // client helper supplies F6; the native preset covers a missing row.
+  return rewrite(value, {key: data.sprint.length ? 'F6' : undefined, toggle: false});
 }
 function restorePreferences(incoming, original) {
   const before = parse(original?.length ? original : seed());
   const after = parse(incoming);
   if (before.sprint.length > 1 || after.sprint.length > 1) throw Error('Ambiguous sprint bindings.');
-  const key = after.sprint[0]?.value === 'W' ? (before.sprint[0]?.value ?? 'None') : undefined;
+  const key = after.sprint[0]?.value === 'F6' ? (before.sprint[0]?.value ?? 'None') : undefined;
   return rewrite(incoming, {key, toggle: before.toggle ? !!(original?.length ? original : seed())[before.toggle.boolOffset] : null});
 }
 function read(file, enabled) {

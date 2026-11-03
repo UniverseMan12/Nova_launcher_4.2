@@ -4,6 +4,7 @@ Import-Module "$PSHOME\Modules\Microsoft.PowerShell.Utility\Microsoft.PowerShell
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding
 $projectRoot = Split-Path $PSScriptRoot -Parent
 $session = $null
+$autoSprint = $null
 $logReader = $null
 $signalDirectory = $null
 try {
@@ -132,6 +133,11 @@ try {
         Write-Output 'LAUNCHER_READY:server'
     } else {
         $session.LoadLibrary($gameId, (Join-Path $projectRoot 'runtime\console.dll'))
+        if ($env:LAUNCHER_AUTO_SPRINT -eq '1') {
+            Add-Type -Path (Join-Path $projectRoot 'src\AutoSprint.cs')
+            $autoSprint = New-Object AutoSprint($gameId)
+            Write-Output '[client] Auto-Sprint: separate sprint input, limited to this Fortnite window.'
+        }
         $hostAddress = '127.0.0.1'
         if ($env:LAUNCHER_GAME_HOST) { $hostAddress = $env:LAUNCHER_GAME_HOST }
         Write-Output "[client] Console loaded. Once the host is ready: press F8, type open ${hostAddress}:7777, press Enter."
@@ -139,11 +145,16 @@ try {
     }
     if ($Mode -eq 'server') {
         while (-not $game.WaitForExit(500)) { $session.HideServerViewport($gameId) }
+    } elseif ($null -ne $autoSprint) {
+        while (-not $game.WaitForExit(8)) { $autoSprint.Tick() }
     } else { $game.WaitForExit() }
 } catch {
     [Console]::Error.WriteLine("[$Mode] " + $_.Exception.Message)
     exit 1
 } finally {
+    if ($null -ne $autoSprint) {
+        try { $autoSprint.Dispose() } catch { [Console]::Error.WriteLine($_.Exception.Message) }
+    }
     if ($null -ne $logReader) { $logReader.Dispose() }
     if ($null -ne $session) { $session.Dispose() }
 }

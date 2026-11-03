@@ -160,7 +160,7 @@ test('settings hashes match downloads, Auto-Sprint is reversible, and locker sur
   const upload=bytes=>request(user+'/ClientSettings.Sav',{method:'PUT',headers:{'user-agent':userAgent,'content-type':'application/octet-stream'},body:bytes});
   backend=await makeBackend('release-one',true);
   let bytes=await download();let parsed=inputSettings.parse(bytes);
-  assert.equal(parsed.sprint[0].value,'W');assert.equal(bytes[parsed.toggle.boolOffset],0);
+  assert.equal(parsed.sprint[0].value,'F6');assert.equal(bytes[parsed.toggle.boolOffset],0);
   let [meta]=await (await request(user)).json();
   assert.equal(meta.length,bytes.length);assert.equal(meta.hash256,crypto.createHash('sha256').update(bytes).digest('hex'));
   assert.equal((await upload(bytes)).status,204);

@@ -25,7 +25,7 @@ export async function startBackend({ port = 3551, xmppPort = 80, gameHost = '127
     const localData = settingsRoot || process.env.LOCALAPPDATA;
     const file = localData ? path.join(localData,'LawinServer/ClientSettings/ClientSettings-4072250.Sav') : path.join(directory,'ClientSettings/ClientSettings-4072250.Sav');
     try { inputSettings.read(file, true); }
-    catch { throw new Error('Auto-Sprint could not read your saved Fortnite 4.2 controls. Turn Auto-Sprint off in Settings to launch with your existing controls.'); }
+    catch (error) { throw new Error(`Auto-Sprint could not prepare your Fortnite 4.2 controls: ${error.message} Turn Auto-Sprint off in Settings to launch with your existing controls.`); }
   }
   prepareLocker(profileDirectory, {workspaces:legacyWorkspaces, current:currentWorkspace, backend:directory});
   const inputFile = path.join(directory, 'CloudStorage/DefaultInput.ini');

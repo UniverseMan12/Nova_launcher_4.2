@@ -72,7 +72,7 @@ process.on('message', async message => {
         await runSession({
           startBackend: () => startBackend({ gameHost: host, signal: controller.signal, autoSprint: options.autoSprint,
             profileDirectory, legacyWorkspaces: message.workspace, currentWorkspace: root }),
-          startGame: (mode, phase) => startGame(mode, phase, { multiplayer: options.mode !== 'solo', gameHost: host, gameMode: options.gameMode, profileDirectory }),
+          startGame: (mode, phase) => startGame(mode, phase, { multiplayer: options.mode !== 'solo', gameHost: host, gameMode: options.gameMode, autoSprint: options.autoSprint, profileDirectory }),
           join: options.mode === 'join', signal: controller.signal,
           status: (text, state) => status(text.replace('Ctrl+C stops everything.', 'Use Stop session to close the game.'), state),
           onHostReady: () => { if (options.mode === 'host') send({ type: 'addresses', addresses: hostAddresses() }); }
