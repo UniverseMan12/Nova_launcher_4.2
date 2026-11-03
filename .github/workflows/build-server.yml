@@ -7,6 +7,7 @@ on:
       - 'scripts/patch-infinity.js'
       - 'scripts/patch-gameplay.js'
       - 'tests/infinity-rules.cpp'
+      - 'tests/character-appearance.cpp'
       - 'server/**'
       - '.github/workflows/build-server.yml'
   workflow_dispatch:
@@ -36,6 +37,10 @@ jobs:
           cl /nologo /std:c++20 /EHsc /I server tests\infinity-rules.cpp /Fe:infinity-rules.exe
           if errorlevel 1 exit /b 1
           infinity-rules.exe
+          if errorlevel 1 exit /b 1
+          cl /nologo /std:c++20 /EHsc /I server tests\character-appearance.cpp /Fe:character-appearance.exe
+          if errorlevel 1 exit /b 1
+          character-appearance.exe
           if errorlevel 1 exit /b 1
       - name: Build game server
         run: msbuild "upstream/Project Reboot 3.0.sln" /p:Configuration=Release /p:Platform=x64 /m:2 /verbosity:minimal

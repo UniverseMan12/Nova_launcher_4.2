@@ -6,13 +6,13 @@ import { ROOT } from './config.js';
 import { createReadiness } from './readiness.js';
 
 // Keep technical helper output in a log; only readiness drives the startup sequence.
-export function startGame(mode, onPhase = () => {}, { multiplayer = false, gameHost = '127.0.0.1', gameMode = 'classic' } = {}) {
+export function startGame(mode, onPhase = () => {}, { multiplayer = false, gameHost = '127.0.0.1', gameMode = 'classic', profileDirectory = path.join(ROOT, 'data/profile') } = {}) {
   const logPath = path.join(ROOT, 'logs', `${mode}-helper.log`);
   const log = fs.createWriteStream(logPath, { flags: 'a' });
   log.write(`\n--- ${new Date().toISOString()} ---\n`);
   const helper = spawn('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(ROOT, 'scripts', 'launch-game.ps1'), '-Mode', mode], {
     cwd: ROOT, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, FORTNITE_LAUNCHER_MULTIPLAYER: multiplayer ? '1' : '0', LAUNCHER_GAME_HOST: gameHost,
+    env: { ...process.env, FORTNITE_LAUNCHER_MULTIPLAYER: multiplayer ? '1' : '0', LAUNCHER_GAME_HOST: gameHost, LAUNCHER_PROFILE_DIR: profileDirectory,
       FORTNITE_LAUNCHER_SHOWDOWN: mode === 'server' && gameMode === 'infinity' ? '1' : '0',
       FORTNITE_LAUNCHER_THANOS: mode === 'server' && gameMode === 'thanos' ? '1' : '0' }
   });

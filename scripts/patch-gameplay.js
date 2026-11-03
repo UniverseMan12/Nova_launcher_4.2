@@ -5,16 +5,17 @@ import {fileURLToPath} from 'node:url';
 export function patchGameplay(root) {
   const directory = path.join(root, 'Project Reboot 3.0');
   const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../server');
-  fs.copyFileSync(path.join(source, 'LauncherCosmetics.inl'), path.join(directory, 'LauncherCosmetics.inl'));
-  const edit = (file, pairs) => {
+  for (const name of ['LauncherCosmetics.inl', 'LauncherLocalLocker.inl', 'LauncherCharacterParts.h', 'CharacterAppearanceRules.h', 'LauncherGameplayLog.h'])
+    fs.copyFileSync(path.join(source, name), path.join(directory, name));
+  const edit = (file, pairs, marker = '// Launcher gameplay fixes v1') => {
     const target = path.join(directory, file);
     let text = fs.readFileSync(target, 'utf8').replaceAll('\r\n', '\n');
-    if (text.includes('// Launcher gameplay fixes v1')) return;
+    if (text.includes(marker)) return;
     for (const [before, after] of pairs) {
       if (text.split(before).length !== 2) throw new Error(`Gameplay patch mismatch in ${file}: ${before.slice(0, 90)}`);
       text = text.replace(before, after);
     }
-    fs.writeFileSync(target, '// Launcher gameplay fixes v1\n' + text);
+    fs.writeFileSync(target, marker + '\n' + text);
   };
   edit('FortInventory.cpp', [
     ['#include "FortInventory.h"', '#include "FortInventory.h"\n#include "LocalTools.h"'],
@@ -38,7 +39,8 @@ export function patchGameplay(root) {
 void AFortPlayerController::InstallLauncherLoadoutHook(UObject* controller) {
     if (Fortnite_Version != 4.2) return;
     auto fn = FindObject<UFunction>(L"/Script/FortniteGame.FortPlayerControllerZone.ServerSendLoadoutConfig");
-    if (fn) Hooking::MinHook::Hook(controller, fn, LauncherLoadoutReceived, (PVOID*)&LauncherLoadoutOriginal, false, true);
+    const bool hooked = fn && Hooking::MinHook::Hook(controller, fn, LauncherLoadoutReceived, (PVOID*)&LauncherLoadoutOriginal, false, true);
+    LauncherGameplayLog(std::string("0.4.4 test: native ability activation retained; loadout hook=") + (hooked ? "ready" : "unavailable"));
 }
 `);
   edit('dllmain.cpp', [
@@ -53,4 +55,38 @@ void AFortPlayerController::InstallLauncherLoadoutHook(UObject* controller) {
     ['\tusing UFortHeroSpecialization = UObject;', '\tif (!Pawn || !HeroDefinition || !HeroDefinition->IsValidLowLevel()) return;\n\tusing UFortHeroSpecialization = UObject;'],
     ['auto HeroDefinition = CID->Get(HeroDefinitionOffset);', 'if (HeroDefinitionOffset < 0) return false;\n\tauto HeroDefinition = CID->Get(HeroDefinitionOffset);\n\tif (!HeroDefinition || !HeroDefinition->IsValidLowLevel()) return false;']
   ]);
+
+  const marker = '// Launcher gameplay fixes v2';
+  edit('FortKismetLibrary.cpp', [
+    ['#include "FortKismetLibrary.h"', '#include "FortKismetLibrary.h"\n#include "LauncherCharacterParts.h"'],
+    ['void UFortKismetLibrary::ApplyCharacterCosmetics(UObject* WorldContextObject, const TArray<UObject*>& CharacterParts, UObject* PlayerState, bool* bSuccess)\n{', `void UFortKismetLibrary::ApplyCharacterCosmetics(UObject* WorldContextObject, const TArray<UObject*>& CharacterParts, UObject* PlayerState, bool* bSuccess)
+{
+    if (Fortnite_Version == 4.2) {
+        const bool applied = LauncherApplyParts42(PlayerState, CharacterParts);
+        if (bSuccess) *bSuccess = applied;
+        return;
+    }`]
+  ], marker);
+  edit('FortGameModeAthena.cpp', [
+    ['#include "FortGameModeAthena.h"', '#include "FortGameModeAthena.h"\n#include "LauncherCharacterParts.h"'],
+    ['\t\t\tParts[(int)EFortCustomPartType::Head] = headPart;\n\t\t\tParts[(int)EFortCustomPartType::Body] = bodyPart;\n\t\t\tParts[(int)EFortCustomPartType::Backpack] = backpackPart;', `            if (Fortnite_Version == 4.2) {
+                TArray<UObject*> initial;
+                initial.Add(headPart); initial.Add(bodyPart); initial.Add(backpackPart);
+                LauncherApplyParts42(PlayerStateAthena, initial, true, false);
+                initial.Free();
+            } else {
+                Parts[(int)EFortCustomPartType::Head] = headPart;
+                Parts[(int)EFortCustomPartType::Body] = bodyPart;
+                Parts[(int)EFortCustomPartType::Backpack] = backpackPart;
+            }`]
+  ], marker);
+  edit('dllmain.cpp', [
+    ['    if (Addresses::InternalTryActivateAbility)\n', `    // 4.2 has the native activation implementation. Keep its prediction/input
+    // cache cleanup and press/release lifecycle, which the replacement omits.
+    if (Addresses::InternalTryActivateAbility && Fortnite_Version != 4.2)
+`]
+  ], marker);
+  edit('FortPlayerControllerAthena.cpp', [
+    ['\tif (Globals::bNoMCP)\n', '\tif (Fortnite_Version == 4.2) { ControllerAsFort->ApplyCosmeticLoadout(); return; }\n\tif (Globals::bNoMCP)\n']
+  ], marker);
 }

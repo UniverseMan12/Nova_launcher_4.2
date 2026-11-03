@@ -1,6 +1,68 @@
 #include "hooking.h"
+#include "LauncherCharacterParts.h"
+#include "LauncherLocalLocker.inl"
+
+static bool LauncherCollectOutfit42(UObject* character, UObject* backpack, TArray<UObject*>& parts) {
+    if (!character || !character->IsValidLowLevel()) return false;
+    const int heroOffset = character->GetOffset("HeroDefinition", false);
+    auto hero = heroOffset >= 0 ? character->Get<UObject*>(heroOffset) : nullptr;
+    if (!hero || !hero->IsValidLowLevel()) return false;
+    const int specializationsOffset = hero->GetOffset("Specializations", false);
+    if (specializationsOffset < 0) return false;
+    auto& specializations = hero->Get<TArray<TSoftObjectPtr<UObject>>>(specializationsOffset);
+    if (specializations.Num() < 1 || specializations.Num() > 32) return false;
+    auto specializationClass = FindObject<UClass>(L"/Script/FortniteGame.FortHeroSpecialization");
+    auto partClass = FindObject<UClass>(L"/Script/FortniteGame.CustomCharacterPart");
+    if (!specializationClass || !partClass) return false;
+    for (int i = 0; i < specializations.Num(); ++i) {
+        auto specialization = specializations.at(i, GetSoftObjectSize()).Get(specializationClass, true);
+        if (!specialization || !specialization->IsValidLowLevel()) return false;
+        const int offset = specialization->GetOffset("CharacterParts", false);
+        if (offset < 0) return false;
+        auto& source = specialization->Get<TArray<TSoftObjectPtr<UObject>>>(offset);
+        if (source.Num() > 32) return false;
+        for (int z = 0; z < source.Num(); ++z) {
+            auto part = source.at(z, GetSoftObjectSize()).Get(partClass, true);
+            if (!part) return false;
+            parts.Add(part);
+        }
+    }
+    if (backpack && backpack->IsValidLowLevel()) {
+        const int offset = backpack->GetOffset("CharacterParts", false);
+        if (offset < 0) return false;
+        auto& source = backpack->Get<TArray<UObject*>>(offset);
+        if (source.Num() > 6) return false;
+        for (int i = 0; i < source.Num(); ++i) if (auto part = source.at(i)) parts.Add(part);
+    }
+    return parts.Num() >= 2;
+}
+
+static void LauncherRefreshPickaxe42(AFortPlayerController* controller, FFortAthenaLoadout* loadout) {
+    auto inventory = controller->GetWorldInventory();
+    auto selected = loadout->GetPickaxe();
+    if (!inventory || !selected || !selected->IsValidLowLevel()) return;
+    const int offset = selected->GetOffset("WeaponDefinition", false);
+    auto definition = offset >= 0 ? selected->Get<UFortItemDefinition*>(offset) : nullptr;
+    if (!definition || !definition->IsValidLowLevel()) return;
+    auto previous = inventory->GetPickaxeInstance();
+    if (previous && previous->GetItemEntry()->GetItemDefinition() == definition) return;
+    auto pawn = controller->GetMyFortPawn();
+    auto weapon = pawn ? pawn->GetCurrentWeapon() : nullptr;
+    const bool equip = !weapon || (previous && weapon->GetWeaponData() == previous->GetItemEntry()->GetItemDefinition());
+    if (previous) {
+        const auto guid = previous->GetItemEntry()->GetItemGuid();
+        if (!inventory->RemoveItem(guid, nullptr, previous->GetItemEntry()->GetCount(), true, true)) return;
+    }
+    controller->AddPickaxeToInventory(); inventory->Update();
+    if (equip) if (auto item = inventory->GetPickaxeInstance()) {
+        auto athena = Cast<AFortPlayerControllerAthena>(controller);
+        const auto guid = item->GetItemEntry()->GetItemGuid();
+        if (athena) { athena->ServerExecuteInventoryItemHook(athena, guid); athena->ClientEquipItem(guid, true); }
+    }
+}
+
 // Included by FortPlayerController.cpp. Use this player's native network loadout;
-// never read the host's locker for a remote player.
+// the local-file fallback is restricted to the one loopback player.
 static bool LauncherApplyCosmetics(AFortPlayerController* controller) {
     if (Fortnite_Version != 4.2) return false;
     auto pawn = Cast<AFortPlayerPawn>(controller->GetMyFortPawn());
@@ -10,20 +72,14 @@ static bool LauncherApplyCosmetics(AFortPlayerController* controller) {
     auto inventory = controller->GetWorldInventory();
     auto gauntlet = FindObject<UFortItemDefinition>("AGID_CarminePack", nullptr, ANY_PACKAGE);
     if (inventory && gauntlet && inventory->FindItemInstance(gauntlet)) return true;
+    const bool localLocker = LauncherReadLocalLocker42(controller, loadout);
     auto character = loadout->GetCharacter();
     if (!character || !character->IsValidLowLevel()) return false;
-    if (!ApplyCID(pawn, character)) return false;
-    auto backpack = loadout->GetBackpack();
-    auto noBackpack = LoadObject(L"/Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack", FindObject<UClass>(L"/Script/FortniteGame.CustomCharacterPart"));
-    pawn->ServerChoosePart(EFortCustomPartType::Backpack, noBackpack);
-    if (backpack && backpack->IsValidLowLevel()) {
-        const int offset = backpack->GetOffset("CharacterParts", false);
-        if (offset >= 0) {
-            auto& parts = backpack->Get<TArray<UObject*>>(offset);
-            for (int i = 0; i < parts.Num(); ++i)
-                if (auto part = parts.at(i)) pawn->ServerChoosePart(EFortCustomPartType::Backpack, part);
-        }
-    }
+    TArray<UObject*> parts;
+    const bool collected = LauncherCollectOutfit42(character, loadout->GetBackpack(), parts);
+    const bool applied = collected && LauncherApplyParts42(state, parts, true);
+    parts.Free();
+    if (!applied) { LOG_WARN(LogDev, "Launcher cosmetics: could not resolve complete parts for {}.", character->GetName()); LauncherGameplayLog("parts unresolved=" + character->GetName()); return false; }
     // Copy object references individually. memcpy of the complete loadout would
     // alias its FString/TArray allocations and risk double frees on respawn.
     const int pawnOffset = pawn->GetOffset("CustomizationLoadout", false);
@@ -37,7 +93,10 @@ static bool LauncherApplyCosmetics(AFortPlayerController* controller) {
         if (auto notify = pawn->FindFunction("OnRep_CustomizationLoadout")) pawn->ProcessEvent(notify);
     }
     state->ForceNetUpdate(); pawn->ForceNetUpdate(); controller->ForceNetUpdate();
+    LauncherRefreshPickaxe42(controller, loadout);
     LocalTools::RememberAppearance(controller, true);
+    LOG_INFO(LogDev, "Launcher cosmetics: applied {} from {}.", character->GetName(), localLocker ? "local locker" : "player loadout");
+    LauncherGameplayLog("applied=" + character->GetName() + (localLocker ? " source=local-locker" : " source=native-loadout"));
     return true;
 }
 

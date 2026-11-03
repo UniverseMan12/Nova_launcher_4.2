@@ -16,8 +16,8 @@ for (const [mode, gameMode] of [['host','infinity'],['host','thanos'],['solo','t
   write('src/config.js', 'export const readConfig=()=>({}); export const prepareConfig=p=>({gamePath:p,version:"4.2"}); export const saveConfig=x=>x;');
   fs.copyFileSync(new URL('../src/multiplayer.js', import.meta.url), path.join(root,'src/multiplayer.js'));
   write('scripts/setup.js', 'export const setup=async()=>{}; export const verifyDll=()=>{};');
-  write('src/backend.js', 'import {EventEmitter} from "node:events"; export async function startBackend(options){ process.send({type:"test-backend",gameHost:options.gameHost}); const child=new EventEmitter(); child.exitCode=null; return {child,stop:async()=>process.send({type:"test-cleanup",role:"backend"})};}');
-  write('src/game.js', 'export function startGame(mode,onPhase=()=>{},options={}) {process.send({type:"test-game",role:mode,gameMode:options.gameMode,gameHost:options.gameHost});onPhase("configure"); let close; return {ready:Promise.resolve(),closed:new Promise(resolve=>close=resolve),stop:async()=>{process.send({type:"test-cleanup",role:mode});close({code:0});}};}');
+  write('src/backend.js', 'import {EventEmitter} from "node:events"; export async function startBackend(options){ process.send({type:"test-backend",gameHost:options.gameHost,profileDirectory:options.profileDirectory}); const child=new EventEmitter(); child.exitCode=null; return {child,stop:async()=>process.send({type:"test-cleanup",role:"backend"})};}');
+  write('src/game.js', 'export function startGame(mode,onPhase=()=>{},options={}) {process.send({type:"test-game",role:mode,gameMode:options.gameMode,gameHost:options.gameHost,profileDirectory:options.profileDirectory});onPhase("configure"); let close; return {ready:Promise.resolve(),closed:new Promise(resolve=>close=resolve),stop:async()=>{process.send({type:"test-cleanup",role:mode});close({code:0});}};}');
   const child = fork(fileURLToPath(new URL('../desktop/worker.mjs', import.meta.url)), { stdio: ['ignore','ignore','pipe','ipc'] });
   t.after(() => { if (child.exitCode === null) child.kill(); });
   const events = [];
@@ -29,6 +29,9 @@ for (const [mode, gameMode] of [['host','infinity'],['host','thanos'],['solo','t
   assert.equal(events.some(x => x.type==='test-game' && x.role==='server' && x.gameMode===gameMode), mode!=='join');
   assert.equal(events.find(x=>x.type==='test-backend').gameHost, mode!=='join'?'127.0.0.1':'25.1.2.3');
   assert.equal(events.find(x=>x.type==='test-game'&&x.role==='client').gameHost, mode!=='join'?'127.0.0.1':'25.1.2.3');
+  const profileDirectory = events.find(x=>x.type==='test-backend').profileDirectory;
+  assert.equal(profileDirectory, path.join(root, 'data', 'profile'));
+  for (const game of events.filter(x=>x.type==='test-game')) assert.equal(game.profileDirectory, profileDirectory);
   assert.deepEqual(events.filter(x=>x.type==='test-cleanup').map(x=>x.role), mode!=='join'?['client','server','backend']:['client','backend']);
   assert.ok(events.some(x=>x.type==='done' && x.cancelled));
 });
