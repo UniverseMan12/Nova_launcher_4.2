@@ -8,7 +8,7 @@ import {spawn,execFile} from 'node:child_process';
 import {promisify} from 'node:util';
 import {setTimeout as delay} from 'node:timers/promises';
 import {chromium,expect} from '@playwright/test';
-import {fileHash,downloadUpdate,LauncherUpdates,REPOSITORY} from '../desktop/updates.mjs';
+import {fileHash,LauncherUpdates,REPOSITORY} from '../desktop/updates.mjs';
 import {launchUpdateHelper} from '../desktop/update-install.mjs';
 
 if(process.env.GITHUB_ACTIONS!=='true'||process.platform!=='win32')throw new Error('Real installer update smoke tests run only on the isolated Windows CI runner.');
@@ -19,10 +19,11 @@ const ps=(script,env={})=>execute('powershell.exe',['-NoProfile','-NonInteractiv
 const exists=file=>fs.access(file).then(()=>true).catch(()=>false);
 async function until(check,message,timeout=90000){const end=Date.now()+timeout;while(Date.now()<end){if(await check())return;await delay(250);}throw new Error(message);}
 async function port(){const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
-async function processes(target){const {stdout}=await ps('Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -eq $env:NOVA_TEST_TARGET } | ForEach-Object { $_.ProcessId }',{NOVA_TEST_TARGET:target});return stdout.trim().split(/\s+/).filter(Boolean).map(Number);}
+async function processes(target){const {stdout}=await ps('foreach($p in [Diagnostics.Process]::GetProcesses()){try{if($p.MainModule.FileName -eq $env:NOVA_TEST_TARGET){$p.Id}}catch{}finally{$p.Dispose()}}',{NOVA_TEST_TARGET:target});return stdout.trim().split(/\s+/).filter(Boolean).map(Number);}
 const oldHashes={nsis:'a7e0d1c4c9e4723b0733f5bfd8155feb0a3ba76f4c85c8ed73a18811361fa540',portable:'8ae100d149bebeacf18301b93c571e997730983d555df73659d671da0d42070a'};
 let target,browser,oldChild;
 try {
+  assert.equal(await fileHash(path.join(root,'dist/win-unpacked/resources/update/install-update.ps1')),await fileHash(path.join(root,'desktop/install-update.ps1')));
   for(const kind of ['portable','nsis']) {
     const testRoot=path.join(temporary,kind+" with spaces & apostrophe's");await fs.mkdir(testRoot);
     const cache=path.join(testRoot,'cache');await fs.mkdir(cache);
@@ -35,6 +36,7 @@ try {
     if(kind==='portable')await fs.copyFile(old,target);
     else await ps("$s=[Diagnostics.ProcessStartInfo]::new();$s.FileName=$env:NOVA_TEST_INSTALLER;$s.Arguments='/S /D='+$env:NOVA_TEST_INSTALL_DIR;$s.UseShellExecute=$false;$s.CreateNoWindow=$true;$p=[Diagnostics.Process]::Start($s);$p.WaitForExit();if($p.ExitCode -ne 0){throw 'Initial installation failed.'}",{NOVA_TEST_INSTALLER:old,NOVA_TEST_INSTALL_DIR:path.dirname(target)});
     assert(await exists(target));
+    if(kind==='nsis')assert(await exists(path.join(path.dirname(target),'Uninstall NOVA DROP.exe')));
     const data=path.join(testRoot,'user-data');await fs.mkdir(data);
     const settings={mode:'host',gameMode:'infinity',gamePath:'C:/Games/My Fortnite 4.2',host:'25.1.2.3',multiplayerName:'Player_abcdef123456'};
     await fs.writeFile(path.join(data,'settings.json'),JSON.stringify(settings));

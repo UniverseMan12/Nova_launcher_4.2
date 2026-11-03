@@ -177,7 +177,7 @@ else {
   window.show();
   // Checks never download/install automatically and never run in isolated UI/smoke tests.
   if(kind && updatePreferences.checkOnStart && !process.env.LAUNCHER_TEST_DATA && updater.state.phase!=='error') {
-    const timer=setTimeout(()=>updater.check(),5000);timer.unref();
+    const timer=setTimeout(()=>{if(updatePreferences.checkOnStart)updater.check();},5000);timer.unref();
   }
   }).catch(error => { console.error(error); app.exit(1); });
 }

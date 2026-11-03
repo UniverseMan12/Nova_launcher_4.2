@@ -20,10 +20,12 @@ export async function launchUpdateHelper({file,sha256,version,kind,target,cache,
   const {stdout}=await promisify(execFile)('powershell.exe',['-NoProfile','-NonInteractive','-Command',`[Diagnostics.Process]::GetProcessById(${Number(parentPid)}).StartTime.ToUniversalTime().ToString('o')`],{windowsHide:true});
   await fs.copyFile(helperSource,helper);
   await fs.writeFile(requestFile,JSON.stringify({id,parentPid,parentStarted:stdout.trim(),source:file,target,kind,sha256,currentSha256:await fileHash(target),version,ready,result,pending}),{flag:'wx'});
-  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',helper,'-RequestFile',requestFile],{windowsHide:true,detached:true,stdio:'ignore'});
+  // Windows children survive their parent's exit without DETACHED_PROCESS.
+  // That flag makes Windows PowerShell exit before running its script on some hosts.
+  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',helper,'-RequestFile',requestFile],{windowsHide:true,stdio:'ignore'});
   let failure;
   child.on('error',error=>{failure=error;});
-  child.on('exit',code=>{if(code!==0)failure=new Error('The update helper could not prepare the installation.');});
+  child.on('exit',()=>{failure=new Error('The update helper stopped before the installation was ready.');});
   try {
     let prepared=false;
     for(let i=0;i<300;i++) {

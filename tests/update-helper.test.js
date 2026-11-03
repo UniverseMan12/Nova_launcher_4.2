@@ -4,9 +4,27 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import {randomUUID} from 'node:crypto';
-import {execFile} from 'node:child_process';
+import {execFile,spawn} from 'node:child_process';
+import {setTimeout as delay} from 'node:timers/promises';
 import {promisify} from 'node:util';
 import {fileHash} from '../desktop/updates.mjs';
+import {launchUpdateHelper} from '../desktop/update-install.mjs';
+
+test('Windows helper becomes ready and honours a cancelled handoff after its parent exits',{skip:process.platform!=='win32'},async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),"nova-helper & apostrophe's-"));
+  const parent=spawn(process.execPath,['-e','setTimeout(()=>{},60000)'],{windowsHide:true,stdio:'ignore'});
+  try {
+    const file=path.join(root,'new.exe'),target=path.join(root,'old.exe');
+    await fs.writeFile(file,'new fixture - never execute');await fs.writeFile(target,'old fixture - never execute');
+    let ready=false;
+    await assert.rejects(launchUpdateHelper({file,sha256:await fileHash(file),version:'0.4.2',kind:'portable',target,cache:root,helperSource:path.resolve('desktop/install-update.ps1'),parentPid:parent.pid,quit:()=>{ready=true;throw new Error('Test cancels the handoff');}}),/Test cancels/);
+    assert(ready);parent.kill();
+    const result=path.join(root,'update-result.json');
+    for(let i=0;i<100;i++){if(await fs.access(result).then(()=>true).catch(()=>false))break;await delay(100);}
+    const receipt=JSON.parse(await fs.readFile(result));assert.equal(receipt.success,false);assert.match(receipt.message,/cancelled.*handoff/);
+    assert.equal(await fs.readFile(target,'utf8'),'old fixture - never execute');
+  } finally {parent.kill();await delay(200);await fs.rm(root,{recursive:true,force:true,maxRetries:5,retryDelay:100});}
+});
 
 for(const scenario of ['bad checksum','cancelled handoff','changed target']) {
   test(`Windows helper preserves the old launcher on ${scenario}`,{skip:process.platform!=='win32'},async()=>{
