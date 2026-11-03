@@ -14,7 +14,7 @@ let app;
 try {
   app=await electron.launch({executablePath:path.join(ROOT,'dist/win-unpacked/NOVA DROP.exe'),env});
   const page=await app.firstWindow();
-  await expect(page.locator('#app-version')).toHaveText('0.4.0');
+  await expect(page.locator('#app-version')).toHaveText('0.4.1');
   await app.evaluate(({dialog},folder)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[folder]});},destination);
   await expect(page.locator('#launch-label')).toHaveText('Download Fortnite 4.2');
   const manifest=JSON.parse(await fs.readFile(path.join(ROOT,'game-download.json'),'utf8'));

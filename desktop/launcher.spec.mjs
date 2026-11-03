@@ -9,7 +9,7 @@ test.beforeEach(async () => {
   const env = { ...process.env, LAUNCHER_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], env });
   page = await app.firstWindow();
-  await expect(page.locator('#app-version')).toHaveText('0.4.0');
+  await expect(page.locator('#app-version')).toHaveText('0.4.1');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);

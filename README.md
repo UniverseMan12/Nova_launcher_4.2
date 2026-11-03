@@ -3,7 +3,7 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*NOVA DROP [0.4.0](https://github.com/UniverseMan12/fortnite-4-2-launcher/releases/tag/v0.4.0) is the current regular release, with game installation from Play, three modes and delayed random Thanos reselection.*
+*NOVA DROP [0.4.1](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.1) is the current regular release, featuring the new teal orbit logo in the launcher and Windows app icon.*
 
 ## Download the game in the launcher
 
@@ -35,7 +35,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For **0.4.0**, choose **NOVA-DROP-0.4.0-x64-nsis.exe** to install, or **NOVA-DROP-0.4.0-x64-portable.exe** to run without installing. The [Releases page](https://github.com/UniverseMan12/fortnite-4-2-launcher/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
+For **0.4.1**, choose **NOVA-DROP-0.4.1-x64-nsis.exe** to install, or **NOVA-DROP-0.4.1-x64-portable.exe** to run without installing. The [Releases page](https://github.com/UniverseMan12/fortnite-4-2-launcher/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.

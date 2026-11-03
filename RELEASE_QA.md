@@ -1,5 +1,12 @@
 # Desktop release checks
 
+## NOVA DROP 0.4.1 — regular logo update
+
+- Scope: the owner-supplied teal orbit-and-star logo, matching startup glow, Windows icon, updated launcher preview and 0.4.1 version labels. Based on the regular 0.4.0 release; the separate bot-lobby prototype is excluded as requested.
+- The PNG is preserved byte-for-byte, including transparency: SHA-256 `00af8064ff12420a511ab0c7d3d34d8d2d4d05d8d9ccf3f02fb5f973149b9229`.
+- Retains the regular native game-server build `1562a467694f98444c16ee2284a1eff5057f2b81` and its existing gameplay validation/limitations below.
+- Windows CI release validation and verified artifact checksums will be recorded here before publication.
+
 ## NOVA DROP 0.4.0 — regular release
 
 - The launcher is now named **NOVA DROP**, with its original transparent meteor emblem in the sidebar, startup screen and Windows icon. The existing app ID and per-user settings directory remain unchanged. The release has no alpha suffix and is published with GitHub's prerelease flag disabled.

@@ -10,7 +10,7 @@ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'launcher-portable-'));
 const probe=net.createServer();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));
 const port=probe.address().port;await new Promise(resolve=>probe.close(resolve));
 const env={...process.env,LAUNCHER_TEST_DATA:temporary};delete env.ELECTRON_RUN_AS_NODE;
-const child=spawn(path.join(ROOT,'dist/NOVA-DROP-0.4.0-x64-portable.exe'),[`--remote-debugging-port=${port}`],{env,windowsHide:true,stdio:'ignore'});
+const child=spawn(path.join(ROOT,'dist/NOVA-DROP-0.4.1-x64-portable.exe'),[`--remote-debugging-port=${port}`],{env,windowsHide:true,stdio:'ignore'});
 const closed=new Promise(resolve=>child.once('close',resolve));
 let browser,page;
 try {
@@ -20,7 +20,7 @@ try {
   browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
   const context=browser.contexts()[0];
   page=context.pages()[0] || await context.waitForEvent('page');
-  await expect(page.locator('#app-version')).toHaveText('0.4.0');
+  await expect(page.locator('#app-version')).toHaveText('0.4.1');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);
