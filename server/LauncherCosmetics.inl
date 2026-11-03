@@ -14,7 +14,7 @@ static bool LauncherApplyCosmetics(AFortPlayerController* controller) {
     if (!character || !character->IsValidLowLevel()) return false;
     if (!ApplyCID(pawn, character)) return false;
     auto backpack = loadout->GetBackpack();
-    auto noBackpack = LoadObject(L"/Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack");
+    auto noBackpack = LoadObject(L"/Game/Characters/CharacterParts/Backpacks/NoBackpack.NoBackpack", FindObject<UClass>(L"/Script/FortniteGame.CustomCharacterPart"));
     pawn->ServerChoosePart(EFortCustomPartType::Backpack, noBackpack);
     if (backpack && backpack->IsValidLowLevel()) {
         const int offset = backpack->GetOffset("CharacterParts", false);
