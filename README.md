@@ -1,3 +1,5 @@
+> **Development test: 0.4.4.** Regression fixes for the 0.4.3 playtest are awaiting in-game confirmation. The public 0.4.3 release has known movement/cosmetic issues; 0.4.2 is temporarily the automatic-update target. See [current testing](RELEASE_QA.md).
+
 # NOVA DROP - Fortnite 4.2 Launcher
 
 

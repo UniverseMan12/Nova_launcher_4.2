@@ -1,5 +1,14 @@
 # Desktop release checks
 
+## 0.4.4 — corrective test build, not published
+
+- The owner tested 0.4.3 and reported sprint stalling after stopping/restarting, incorrect default-body proportions before ever becoming Thanos, missing Black Knight/Lightning-glider selection, glitchy full reset, and jitter while flying. Clear inventory and practice respawn worked.
+- The saved locker contains `CID_035_Athena_Commando_M_Medieval` and `Glider_ID_010_Storm`; both assets and the selected backpack/pickaxe/contrail were located in the installed 4.2 PAK index without modifying the game. The server log reports no Athena profile during loadout lookup; the client log repeatedly reports rejected `FortGameplayAbility_Sprint` activations.
+- Changes under test: keep the native 4.2 ability-activation path (the replacement omits replicated-data cleanup); handle 4.2's six character-part pointers without a later-version wrapper offset; choose a valid gender/body size compatible with the selected parts; apply saved locker choices only to the loopback player when the No-MCP host has no usable loadout. Remote players are never assigned the host's profile. Remote cosmetic delivery remains unconfirmed.
+- The appearance rules have native regression cases for a female fallback, Black Knight, restoring a medium body after Thanos, incompatible parts and mask values. Worker tests check that backend and native host receive the same persistent profile directory.
+- [Native build 41700629209](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41700629209) compiled `f4bfd6e0e14f54339842988354dbf8ea33637f97` and passed both native rules checks. Artifact `13263486999` matched GitHub archive SHA-256 `a1d3205d47dc0fd90cc643670fc96bcf788eed474bc606be7c0f9391afcb94ac`; the DLL matched its included checksum `ca162057aee3e2efa150ba0dc2be7b107d2dfc12d736737d620de439d250455b`. This exact DLL is pinned for the test launcher.
+- No live Fortnite process is started or controlled by the agent. The new code is a test candidate until the owner verifies it in the game. Version 0.4.3 has a public known-issues notice; 0.4.2 is temporarily the latest automatic-update target.
+
 ## NOVA DROP 0.4.3 — gameplay tools and launcher polish
 
 - Based on regular 0.4.2. The unconfirmed bot-lobby branch is not included.
@@ -10,7 +19,7 @@
 - Final artifact `13261705693` matched GitHub's archive SHA-256 `f5233e09eb7d1b078cf6188b2ed531a51a72a8f3e6e206cf1fc542eafcc5d540`. Both EXEs matched their checksum file: installer `43aa91dcdf34a45d4a64ea3c79a88366a9999598a8a124b2c2e68d7f52e06624`, portable `89efa659a3c0a6fec49d9021e8f768dccffba255e0f8eb20ade8236b5b88d25c`. Both Windows executables report product/file version **0.4.3** and product name **NOVA DROP**. The preliminary artifact from run `41693121715` is not used for this release.
 - The final CI home and changelog screenshots were visually checked and copied into the README. The changelog scrolls at smaller window sizes; its close control remains visible. Publication changes only documentation and README images after the tested source, leaving the executable files unchanged.
 - Hidden, isolated launcher previews were inspected at 1200×820 and 940×700, including the shared Thanos selector, larger text and changelog. No live Fortnite session was controlled for these checks.
-- In-game validation of Auto-Sprint, Black Knight/glider replication and repeated full resets remains pending. Compilation and backend/UI tests do not establish that these engine paths work in a live 4.2 match.
+- **Post-publication gameplay result: failed.** The owner reported Auto-Sprint stalls, missing Black Knight/glider selection, incorrect body proportions and glitchy Thanos resets. Flying also jitters. Clear inventory and practice respawn were confirmed working. The release notes now disclose these issues and the automatic-update target was returned to 0.4.2 while a correction is tested.
 
 
 ## NOVA DROP 0.4.2 — regular updater release

@@ -3,11 +3,10 @@ import path from 'node:path';
 import {isNewer, versionParts} from './updates.mjs';
 
 export const changes = Object.freeze([
-  {title:'Move your way', text:'Auto-Sprint is now in Settings. Hold W to sprint; turn it off to return to your previous sprint controls.'},
-  {title:'A proper fresh start', text:'New Full reset and Clear inventory tools in Reboot, plus clearer console commands. Full reset removes the Thanos transformation.'},
-  {title:'Keep your look', text:'Your locker choices carry into matches and stay saved across launcher updates, including outfits, gliders and emotes.'},
-  {title:'One Thanos card. Two ways to play.', text:'Choose Thanos normal or Infinity Showdown from one card. Larger text and a lighter visual refresh make the launcher easier to read.'},
-  {title:'Small fixes that matter', text:'Corrected saved-settings downloads and protected reset actions from stale character references.'}
+  {title:'Movement fixes — ready to test', text:'Updated Auto-Sprint handling for stopping and starting again. Please check movement on foot and while gliding.'},
+  {title:'Your outfit, in the match', text:'The local player now reads the saved lobby outfit, glider and pickaxe. Friends retain their own loadouts.'},
+  {title:'Character proportions', text:'Corrected the body-part layout and skeleton selection used when spawning and resetting out of Thanos.'},
+  {title:'Practice tools retained', text:'Clear inventory and practice respawn remain available. This build needs an in-game check before the fixes are confirmed.'}
 ]);
 
 export class WhatsNew {
