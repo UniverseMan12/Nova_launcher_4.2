@@ -22,7 +22,7 @@ export async function launchUpdateHelper({file,sha256,version,kind,target,cache,
   await fs.writeFile(requestFile,JSON.stringify({id,parentPid,parentStarted:stdout.trim(),source:file,target,kind,sha256,currentSha256:await fileHash(target),version,ready,result,pending}),{flag:'wx'});
   // Windows children survive their parent's exit without DETACHED_PROCESS.
   // That flag makes Windows PowerShell exit before running its script on some hosts.
-  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',helper,'-RequestFile',requestFile],{windowsHide:true,stdio:'ignore'});
+  const child=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',helper,'-RequestFile',requestFile],{cwd:cache,windowsHide:true,stdio:'ignore'});
   let failure;
   child.on('error',error=>{failure=error;});
   child.on('exit',()=>{failure=new Error('The update helper stopped before the installation was ready.');});

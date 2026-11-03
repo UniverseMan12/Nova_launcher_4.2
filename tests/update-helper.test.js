@@ -11,7 +11,7 @@ import {fileHash} from '../desktop/updates.mjs';
 import {launchUpdateHelper} from '../desktop/update-install.mjs';
 
 test('Windows helper becomes ready and honours a cancelled handoff after its parent exits',{skip:process.platform!=='win32'},async()=>{
-  const root=await fs.mkdtemp(path.join(os.tmpdir(),"nova-helper & apostrophe's-"));
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),"nova-helper Ü & apostrophe's-"));
   const parent=spawn(process.execPath,['-e','setTimeout(()=>{},60000)'],{windowsHide:true,stdio:'ignore'});
   try {
     const file=path.join(root,'new.exe'),target=path.join(root,'old.exe');

@@ -25,7 +25,7 @@ let target,browser,oldChild;
 try {
   assert.equal(await fileHash(path.join(root,'dist/win-unpacked/resources/update/install-update.ps1')),await fileHash(path.join(root,'desktop/install-update.ps1')));
   for(const kind of ['portable','nsis']) {
-    const testRoot=path.join(temporary,kind+" with spaces & apostrophe's");await fs.mkdir(testRoot);
+    const testRoot=path.join(temporary,kind+" with Ü spaces & apostrophe's");await fs.mkdir(testRoot);
     const cache=path.join(testRoot,'cache');await fs.mkdir(cache);
     const oldName=`NOVA-DROP-0.4.1-x64-${kind}.exe`,old=path.join(testRoot,oldName);
     const oldURL=`https://github.com/${REPOSITORY}/releases/download/v0.4.1/${oldName}`;

@@ -15,7 +15,7 @@ function Hash([string]$file) {
 }
 function Start-Launcher {
     if($pathsChecked -and (Test-Path -LiteralPath $request.pending)) {
-        $pending=Get-Content -LiteralPath $request.pending -Raw | ConvertFrom-Json
+        $pending=Get-Content -LiteralPath $request.pending -Raw -Encoding UTF8 | ConvertFrom-Json
         if($pending.id -eq $request.id){Remove-Item -LiteralPath $request.pending -Force}
     }
     # Do not inherit the old portable wrapper's extraction path into the new launch.
@@ -32,7 +32,7 @@ function Start-Launcher {
     $process.Dispose()
 }
 try {
-    $request=Get-Content -LiteralPath $RequestFile -Raw | ConvertFrom-Json
+    $request=Get-Content -LiteralPath $RequestFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $root=[IO.Path]::GetFullPath([IO.Path]::GetDirectoryName($RequestFile))
     foreach($field in @('ready','result','pending')) {
         if([IO.Path]::GetDirectoryName([IO.Path]::GetFullPath($request.$field)) -ne $root){throw 'Invalid update result path.'}
