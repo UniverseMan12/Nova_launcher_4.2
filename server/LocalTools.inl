@@ -201,7 +201,7 @@ namespace LocalTools {
         }
         if (!transformed) RememberAppearance(controller);
         // Validate restoration before removing a gadget or any other items.
-        if (OriginalAppearance.appearance.saved && !RestoreAppearance(controller, OriginalAppearance, false)) {
+        if (OriginalAppearance.appearance.saved && !RestoreAppearance(controller, OriginalAppearance, false, true)) {
             Report("Waiting for your original outfit to load. Please try again."); return false;
         }
         ClearPlayerItems(controller, clear);

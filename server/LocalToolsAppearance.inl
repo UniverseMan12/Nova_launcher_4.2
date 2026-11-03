@@ -32,7 +32,7 @@ static AppearanceState OriginalAppearance;
         LOG_INFO(LogDev, "Local tools: saved original appearance (gender {}, body {}).", int(saved.gender), int(saved.body));
         return true;
     }
-    static bool RestoreAppearance(AFortPlayerControllerAthena* controller, const AppearanceState& player, bool notify) {
+    static bool RestoreAppearance(AFortPlayerControllerAthena* controller, const AppearanceState& player, bool notify, bool validateOnly = false) {
         const auto& saved = player.appearance;
         if (!saved.saved) return false;
         auto state = controller->GetPlayerState(); int parts, gender, body;
@@ -44,6 +44,7 @@ static AppearanceState OriginalAppearance;
         }
         auto originalAnimation = saved.animation.Get();
         if (saved.animation.index >= 0 && !originalAnimation) return false;
+        if (validateOnly) return true;
         const auto previousGender = state->Get<uint8_t>(gender), previousBody = state->Get<uint8_t>(body);
         state->Get<uint8_t>(gender) = saved.gender; state->Get<uint8_t>(body) = saved.body;
         auto destination = state->GetPtr<UObject*>(parts);
