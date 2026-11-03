@@ -8,7 +8,7 @@ class AFortPlayerController;
 class AFortPlayerControllerAthena;
 
 namespace LocalTools {
-    enum Action { None, Respawn, Heal, Loot, Kit, Materials, Ammo, ClearBuilds, Gauntlet, SpawnItem, ClearLoot, SaveSpot, ReturnSpot, ForgetSpot };
+    enum Action { None, Respawn, Heal, Loot, Kit, Materials, Ammo, ClearBuilds, Gauntlet, SpawnItem, ClearLoot, SaveSpot, ReturnSpot, ForgetSpot, ClearInventory, FullReset };
     struct Request { Action action = None; int item = 0; int count = 1; };
     inline std::mutex QueueMutex;
     inline Request Pending;
@@ -32,6 +32,7 @@ namespace LocalTools {
         std::lock_guard<std::mutex> guard(QueueMutex);
         auto request = Pending; Pending = {}; return request;
     }
+    void RememberAppearance(AFortPlayerController* controller, bool refresh = false);
     bool IsLocal(AFortPlayerController* controller);
     bool OnDeath(AFortPlayerController* controller);
     void Tick(UNetDriver* driver);

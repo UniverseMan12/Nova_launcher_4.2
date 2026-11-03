@@ -10,7 +10,6 @@
 #include <chrono>
 
 namespace LocalTools {
-    static int DeadControllerIndex = -1;
     static FVector DeathLocation;
     static bool HasDeathLocation = false;
     static FVector SavedLocation;
@@ -32,7 +31,7 @@ namespace LocalTools {
                 slot->Object && slot->Object->NamePrivate == name ? slot->Object : nullptr;
         }
     };
-    static TrackedObject SessionPlayer;
+    static TrackedObject SessionPlayer, DeadController;
     static std::vector<TrackedObject> SpawnedLoot;
     static auto LastAction = std::chrono::steady_clock::time_point{};
 
@@ -92,13 +91,15 @@ namespace LocalTools {
         return ip == "127.0.0.1" || ip.rfind("127.0.0.1:", 0) == 0;
     }
 
+    #include "LocalToolsAppearance.inl"
+
     bool OnDeath(AFortPlayerController* controller) {
         if (InfinityShowdown::Enabled.load()) return InfinityShowdown::OnDeath(controller);
         if (!PracticeRespawn.load() || !IsLocal(controller)) return false;
         auto pawn = controller->GetMyFortPawn();
         if (!pawn || !pawn->IsValidLowLevel()) return false;
         if (pawn->IsDBNO()) return false; // Let normal teammate revival handle knockdowns.
-        DeadControllerIndex = controller->InternalIndex;
+        DeadController = TrackedObject(controller);
         DeathLocation = pawn->GetActorLocation();
         HasDeathLocation = true;
         Report("You died. Click Respawn me. Practice mode keeps your inventory and round.");
@@ -147,7 +148,36 @@ namespace LocalTools {
         weapon->ForceNetUpdate();
     }
 
-    static bool RespawnPlayer(AFortPlayerControllerAthena* controller) {
+    static bool HasGauntlet(AFortInventory* inventory) {
+        auto gauntlet = FindObject<UFortItemDefinition>("AGID_CarminePack", nullptr, ANY_PACKAGE);
+        return gauntlet && inventory && inventory->FindItemInstance(gauntlet);
+    }
+    static void ClearPlayerItems(AFortPlayerControllerAthena* controller, bool all) {
+        auto inventory = controller->GetWorldInventory();
+        auto gauntlet = FindObject<UFortItemDefinition>("AGID_CarminePack", nullptr, ANY_PACKAGE);
+        // Native unequip removes its granted abilities/effects and may replace the pawn.
+        if (gauntlet) if (auto item = inventory->FindItemInstance(gauntlet)) {
+            const auto guid = item->GetItemEntry()->GetItemGuid();
+            const int count = item->GetItemEntry()->GetCount();
+            inventory->RemoveItem(guid, nullptr, count, true);
+        }
+        if (all) {
+            std::vector<std::pair<FGuid,int>> remove;
+            const auto pickaxe = inventory->GetPickaxeInstance();
+            auto& items = inventory->GetItemList().GetItemInstances();
+            for (int i = 0; i < items.Num(); ++i) {
+                auto item = items.at(i); if (!item || item == pickaxe) continue;
+                auto entry = item->GetItemEntry(); auto def = entry->GetItemDefinition();
+                // Keep the building/edit tools required by the controller.
+                if (def && (def->GetName().rfind("BuildingItemData", 0) == 0 || def->GetName() == "EditTool")) continue;
+                remove.push_back({entry->GetItemGuid(), entry->GetCount()});
+            }
+            for (const auto& item : remove) inventory->RemoveItem(item.first, nullptr, item.second, true);
+        }
+        inventory->Update();
+    }
+
+    static bool RespawnPlayer(AFortPlayerControllerAthena* controller, bool clear = false) {
         auto mode = Cast<AFortGameModeAthena>(GetWorld()->GetGameMode());
         auto state = Cast<AFortPlayerStateAthena>(controller->GetPlayerState());
         if (!mode || !state || !controller->GetWorldInventory()) { Report("Player inventory or match is not ready."); return false; }
@@ -158,12 +188,24 @@ namespace LocalTools {
         }
         auto oldPawn = controller->GetMyFortPawn();
         if (oldPawn && (!oldPawn->IsValidLowLevel() || oldPawn->IsActorBeingDestroyed())) oldPawn = nullptr;
-        bool dead = DeadControllerIndex == controller->InternalIndex;
+        const TrackedObject oldPawnRef(oldPawn);
+        bool dead = DeadController.Get() == controller;
         if (!oldPawn && !(dead && HasDeathLocation) && !HasSavedSpot.load()) { Report("No spawn position is available yet."); return false; }
         FVector location = HasSavedSpot.load() ? SavedLocation : dead && HasDeathLocation ? DeathLocation : oldPawn->GetActorLocation();
         location.Z += 150;
         auto spawn = FindObject<UFunction>(L"/Script/Engine.GameModeBase.SpawnDefaultPawnAtTransform");
         if (!spawn) { Report("This build does not expose pawn spawning."); return false; }
+        const bool transformed = HasGauntlet(controller->GetWorldInventory());
+        if (transformed && !OriginalAppearance.appearance.saved) {
+            Report("Normal appearance is not ready. Rejoin the match before resetting."); return false;
+        }
+        if (!transformed) RememberAppearance(controller);
+        // Validate restoration before removing a gadget or any other items.
+        if (OriginalAppearance.appearance.saved && !RestoreAppearance(controller, OriginalAppearance, false)) {
+            Report("Waiting for your original outfit to load. Please try again."); return false;
+        }
+        ClearPlayerItems(controller, clear);
+        if (OriginalAppearance.appearance.saved) RestoreAppearance(controller, OriginalAppearance, false);
         FTransform transform{};
         transform.Translation = location;
         transform.Rotation = controller->GetControlRotation().Quaternion();
@@ -176,6 +218,8 @@ namespace LocalTools {
         state->ClearDeathInfo();
         pawn->SetOwner(controller);
         controller->Possess(pawn);
+        if (OriginalAppearance.appearance.saved) RestoreAppearance(controller, OriginalAppearance, true);
+        controller->ApplyCosmeticLoadout();
         pawn->SetMaxHealth(100); pawn->SetHealth(100);
         pawn->SetMaxShield(100); bool shieldRestored = RestoreShield(pawn);
         controller->SetPlayerIsWaiting(false);
@@ -183,8 +227,9 @@ namespace LocalTools {
         controller->RespawnPlayerAfterDeath(false);
         if (auto restart = controller->FindFunction("ClientRestart")) controller->ProcessEvent(restart, &pawn);
         pawn->ForceNetUpdate();
+        oldPawn = Cast<AFortPawn>(oldPawnRef.Get());
         if (oldPawn && oldPawn != pawn && oldPawn->IsValidLowLevel() && !oldPawn->IsActorBeingDestroyed()) oldPawn->K2_DestroyActor();
-        DeadControllerIndex = -1; HasDeathLocation = false;
+        DeadController = {}; HasDeathLocation = false;
         Report(shieldRestored ? "Respawned with 100 health and shield." : "Respawned. Shield restoration is unavailable in this build.");
         return true;
     }
@@ -194,22 +239,36 @@ namespace LocalTools {
         if (!IsLocal(controller)) { Report("No local player. Join your match first."); return; }
         if (SessionPlayer.Get() != controller) {
             SessionPlayer = TrackedObject(controller);
-            DeadControllerIndex = -1; HasDeathLocation = false; HasSavedSpot.store(false);
+            DeadController = {}; HasDeathLocation = false; HasSavedSpot.store(false); OriginalAppearance = {};
         }
         auto now = std::chrono::steady_clock::now();
         if (now - LastAction < std::chrono::milliseconds(250)) { Report("Please wait a moment before the next action."); return; }
         LastAction = now;
         PruneLoot();
         if (action == ForgetSpot) { HasSavedSpot.store(false); Report("Saved spot cleared."); return; }
-        if (action == Respawn) { RespawnPlayer(controller); return; }
+        if (action == Respawn || action == FullReset || action == ClearInventory) {
+            if (action != Respawn) {
+                InfiniteAmmo.store(false); InfiniteMaterials.store(false); AutoHeal.store(false);
+            }
+            if (action != ClearInventory || HasGauntlet(controller->GetWorldInventory())) {
+                if (RespawnPlayer(controller, action != Respawn) && action == FullReset) {
+                    HasSavedSpot.store(false);
+                    Report("Fully reset: normal outfit, 100 health/shield, empty inventory. Pickaxe and building tools kept.");
+                }
+                return;
+            }
+        }
         auto pawn = controller->GetMyFortPawn();
-        if (!pawn || !pawn->IsValidLowLevel() || pawn->IsActorBeingDestroyed() || pawn->GetHealth() <= 0 || DeadControllerIndex == controller->InternalIndex) {
+        if (!pawn || !pawn->IsValidLowLevel() || pawn->IsActorBeingDestroyed() || pawn->GetHealth() <= 0 || DeadController.Get() == controller) {
             Report("Respawn or join the match first."); return;
         }
         if (pawn->IsDBNO()) { Report("Get revived or use Respawn me first."); return; }
         auto playerState = Cast<AFortPlayerStateAthena>(controller->GetPlayerState());
         if (!playerState || playerState->IsInAircraft()) { Report("Jump from the bus before using this tool."); return; }
-        if (action == SaveSpot) {
+        if (action == ClearInventory) {
+            ClearPlayerItems(controller, true);
+            Report("Inventory cleared. Pickaxe and building tools kept; automatic refills disabled.");
+        } else if (action == SaveSpot) {
             SavedLocation = pawn->GetActorLocation(); SavedRotation = controller->GetControlRotation();
             HasSavedSpot.store(true); Report("Spot saved. Return here or use it as your respawn point.");
         } else if (action == ReturnSpot) {
@@ -323,19 +382,20 @@ namespace LocalTools {
         LocalPlayerCount.store(localCount);
         if (localCount != 1) {
             PlayerReady.store(false);
-            if (!localCount) { SessionPlayer = {}; DeadControllerIndex = -1; HasDeathLocation = false; HasSavedSpot.store(false); }
+            if (!localCount) { SessionPlayer = {}; OriginalAppearance = {}; DeadController = {}; HasDeathLocation = false; HasSavedSpot.store(false); }
             if (action != None) Report(localCount ? "Local tools require exactly one local player." : "Join your local match first.");
             return;
         }
         if (SessionPlayer.Get() != local) {
-            SessionPlayer = TrackedObject(local); DeadControllerIndex = -1; HasDeathLocation = false; HasSavedSpot.store(false);
+            SessionPlayer = TrackedObject(local); OriginalAppearance = {}; DeadController = {}; HasDeathLocation = false; HasSavedSpot.store(false);
         }
         auto pawn = local->GetMyFortPawn();
-        bool alive = pawn && pawn->IsValidLowLevel() && !pawn->IsActorBeingDestroyed() && pawn->GetHealth() > 0 && !pawn->IsDBNO() && DeadControllerIndex != local->InternalIndex;
+        bool alive = pawn && pawn->IsValidLowLevel() && !pawn->IsActorBeingDestroyed() && pawn->GetHealth() > 0 && !pawn->IsDBNO() && DeadController.Get() != local;
         PlayerReady.store(alive);
+        if (alive && !HasGauntlet(local->GetWorldInventory())) RememberAppearance(local);
         if (action != None) Execute(local, request.action, request.item, request.count);
         if (refill) PruneLoot();
-        if (refill && alive && action != Respawn) {
+        if (refill && alive && action == None) {
             if (InfiniteMaterials.load()) TopUp(local, true);
             if (InfiniteAmmo.load()) { TopUp(local, false); RefillMagazine(local); }
             if (AutoHeal.load()) RestoreHealth(pawn);

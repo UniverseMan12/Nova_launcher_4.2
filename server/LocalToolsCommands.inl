@@ -13,6 +13,8 @@ namespace LocalTools {
         std::transform(command.begin(), command.end(), command.begin(), ::tolower);
         Action action = None;
         if (command == "respawn") action = Respawn;
+        else if (command == "reset" || command == "fullreset") action = FullReset;
+        else if (command == "clearinventory") action = ClearInventory;
         else if (command == "heal") action = Heal;
         else if (command == "loot") action = Loot;
         else if (command == "kit") action = Kit;
@@ -40,6 +42,6 @@ namespace LocalTools {
                 " | Saved spot: " + (HasSavedSpot.load() ? "yes" : "no") +
                 " | Tool loot: " + std::to_string(SpawnedLootCount.load()) + "/100"); return;
         }
-        respond("cheat local respawn/heal/loot/kit/gauntlet/materials/ammo/clearbuilds/clearloot/save/return/forget/status; infiniteammo/infinitematerials/practice/autoheal on/off");
+        respond("cheat local reset/clearinventory/respawn/heal/loot/kit/gauntlet/materials/ammo/clearbuilds/clearloot/save/return/forget/status; infiniteammo/infinitematerials/practice/autoheal on/off");
     }
 }

@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 export function patchLocalTools(root) {
   const dir = path.join(root, 'Project Reboot 3.0');
   const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'server');
-  for (const name of ['LocalTools.h', 'LocalTools.inl', 'LocalToolsUI.inl', 'LocalToolsCatalog.h', 'LocalToolsCommands.inl', 'InfinityRules.h', 'InfinityShowdown.h', 'InfinityShowdown.inl']) {
+  for (const name of ['LocalTools.h', 'LocalToolsAppearance.inl', 'LocalTools.inl', 'LocalToolsUI.inl', 'LocalToolsCatalog.h', 'LocalToolsCommands.inl', 'InfinityRules.h', 'InfinityShowdown.h', 'InfinityShowdown.inl']) {
     fs.copyFileSync(path.join(source, name), path.join(dir, name));
   }
   const edit = (name, replacements) => {

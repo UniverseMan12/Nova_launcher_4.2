@@ -24,6 +24,9 @@ static inline void LauncherLocalToolsUI()
             if (ImGui::Button("Respawn me")) LocalTools::Queue(LocalTools::Respawn);
             ImGui::SameLine();
             if (ImGui::Button("Heal + shield")) LocalTools::Queue(LocalTools::Heal);
+            if (ImGui::Button("Full reset (exit Thanos)")) LocalTools::Queue(LocalTools::FullReset);
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("Returns to your outfit, clears items, restores 100 health/shield and disables automatic refills.");
+            ImGui::TextDisabled("Console: cheat local reset  |  cheat local respawn");
             if (ImGui::Button("Save my spot")) LocalTools::Queue(LocalTools::SaveSpot);
             ImGui::SameLine();
             if (ImGui::Button("Return to spot")) LocalTools::Queue(LocalTools::ReturnSpot);
@@ -51,6 +54,8 @@ static inline void LauncherLocalToolsUI()
             if (ImGui::Button("Spawn chest loot")) LocalTools::Queue(LocalTools::Loot);
             ImGui::SameLine();
             if (ImGui::Button("Give starter kit")) LocalTools::Queue(LocalTools::Kit);
+            if (ImGui::Button("Clear inventory")) LocalTools::Queue(LocalTools::ClearInventory);
+            ImGui::TextDisabled("Console: cheat local clearinventory");
             if (ImGui::Button("Clear spawned loot")) LocalTools::Queue(LocalTools::ClearLoot);
             ImGui::SameLine();
             ImGui::TextDisabled("%d / %d pickups", LocalTools::SpawnedLootCount.load(), LocalTools::LootLimit);

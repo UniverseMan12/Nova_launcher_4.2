@@ -5,6 +5,7 @@ on:
       - 'scripts/patch-reboot.js'
       - 'scripts/patch-local-tools.js'
       - 'scripts/patch-infinity.js'
+      - 'scripts/patch-gameplay.js'
       - 'tests/infinity-rules.cpp'
       - 'server/**'
       - '.github/workflows/build-server.yml'
