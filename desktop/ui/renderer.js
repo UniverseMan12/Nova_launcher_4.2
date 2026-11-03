@@ -156,10 +156,21 @@ $('stop').onclick = () => safely(() => window.launcher.stop());
 $('open-logs').onclick = () => safely(() => window.launcher.logs());
 $('minimize').onclick = () => safely(() => window.launcher.minimize());
 $('close').onclick = () => safely(() => window.launcher.close());
-window.launcher.subscribe(render);
+// Always dismiss the overlay, even if preload failed before exposing the bridge.
 setTimeout(() => { $('startup').hidden = true; }, 1200);
 safely(async () => {
-  const initial = await window.launcher.initial();
+  if (!window.launcher) {
+    document.querySelectorAll('button, input').forEach(el => { el.disabled = true; });
+    throw new Error('The launcher connection could not start. Close NOVA DROP and check startup.log in the FortniteLauncher data folder.');
+  }
+  window.launcher.subscribe(render);
+  let timer, initial;
+  try {
+    initial = await Promise.race([
+      window.launcher.initial(),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('The launcher did not respond. Close NOVA DROP and check startup.log.')), 15000); })
+    ]);
+  } finally { clearTimeout(timer); }
   showPage('play');
   $('app-version').textContent = initial.version;
   $('game-path').value = initial.settings.gamePath || '';

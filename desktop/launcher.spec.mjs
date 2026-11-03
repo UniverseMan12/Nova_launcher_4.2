@@ -121,6 +121,42 @@ test('startup finishes without blocking controls and reduced motion skips it', a
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
 });
 
+test('default and opt-in CrossOver startup keep the renderer protections and load the UI', async () => {
+  for (const crossover of [false, true]) {
+    if (crossover) {
+      await app.close();
+      const env = { ...process.env, LAUNCHER_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE;
+      app = await electron.launch({ args: ['.', '--crossover'], env });
+      page = await app.firstWindow();
+    }
+    await expect(page.locator('#app-version')).toHaveText('0.4.0');
+    await expect(page.locator('#startup')).toBeHidden();
+    await expect(page.locator('#launch')).toBeEnabled();
+    const details = await app.evaluate(({ BrowserWindow }) => {
+      const window = BrowserWindow.getAllWindows()[0];
+      const prefs = window.webContents.getLastWebPreferences();
+      return { visible: window.isVisible(), sandbox: prefs.sandbox, contextIsolation: prefs.contextIsolation, nodeIntegration: prefs.nodeIntegration, webSecurity: prefs.webSecurity };
+    });
+    expect(details).toEqual({ visible: true, sandbox: true, contextIsolation: true, nodeIntegration: false, webSecurity: true });
+    const events = fs.readFileSync(path.join(userData, 'startup.log'), 'utf8').trim().split('\n').map(line => JSON.parse(line));
+    expect(events.filter(event => event.event === 'starting').at(-1).crossover).toBe(crossover);
+    expect(events.at(-1).event).toBe('interface-loaded');
+  }
+});
+
+test('missing preload bridge shows a useful error instead of an endless startup overlay', async () => {
+  const extraWindow = app.waitForEvent('window');
+  await app.evaluate(async ({ BrowserWindow }) => {
+    const url = BrowserWindow.getAllWindows()[0].webContents.getURL();
+    const broken = new BrowserWindow({ webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false } });
+    await broken.loadURL(url);
+  });
+  const broken = await extraWindow;
+  await expect(broken.locator('#startup')).toBeHidden();
+  await expect(broken.locator('#error-banner')).toContainText('launcher connection could not start');
+  await expect(broken.locator('#launch')).toBeDisabled();
+});
+
 test('main Play button downloads without Settings and existing folders are preserved', async () => {
   await app.evaluate(({dialog})=>{dialog.showOpenDialog=async()=>({canceled:true,filePaths:[]});});
   await page.locator('#launch').click();
