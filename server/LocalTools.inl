@@ -152,17 +152,19 @@ namespace LocalTools {
         auto gauntlet = FindObject<UFortItemDefinition>("AGID_CarminePack", nullptr, ANY_PACKAGE);
         return gauntlet && inventory && inventory->FindItemInstance(gauntlet);
     }
-    static void ClearPlayerItems(AFortPlayerControllerAthena* controller, bool all) {
+    static bool ClearPlayerItems(AFortPlayerControllerAthena* controller, bool all) {
         auto inventory = controller->GetWorldInventory();
         auto gauntlet = FindObject<UFortItemDefinition>("AGID_CarminePack", nullptr, ANY_PACKAGE);
+        if (!inventory) return false;
         // Native unequip removes its granted abilities/effects and may replace the pawn.
         if (gauntlet) if (auto item = inventory->FindItemInstance(gauntlet)) {
             const auto guid = item->GetItemEntry()->GetItemGuid();
             const int count = item->GetItemEntry()->GetCount();
             const bool previousGadgets = Globals::bEnableAGIDs;
             Globals::bEnableAGIDs = true;
-            inventory->RemoveItem(guid, nullptr, count, true);
+            const bool removed = inventory->RemoveItem(guid, nullptr, count, true, true);
             Globals::bEnableAGIDs = previousGadgets;
+            if (!removed || inventory->FindItemInstance(guid)) return false;
         }
         if (all) {
             std::vector<std::pair<FGuid,int>> remove;
@@ -175,9 +177,12 @@ namespace LocalTools {
                 if (def && (def->GetName().rfind("BuildingItemData", 0) == 0 || def->GetName() == "EditTool")) continue;
                 remove.push_back({entry->GetItemGuid(), entry->GetCount()});
             }
-            for (const auto& item : remove) inventory->RemoveItem(item.first, nullptr, item.second, true);
+            for (const auto& item : remove) {
+                if (!inventory->RemoveItem(item.first, nullptr, item.second, true, true)) { inventory->Update(); return false; }
+            }
         }
         inventory->Update();
+        return true;
     }
 
     static void EquipPickaxe(AFortPlayerControllerAthena* controller) {
@@ -219,7 +224,7 @@ namespace LocalTools {
         if (OriginalAppearance.appearance.saved && !RestoreAppearance(controller, OriginalAppearance, false, true)) {
             Report("Waiting for your original outfit to load. Please try again."); return false;
         }
-        ClearPlayerItems(controller, clear);
+        if (!ClearPlayerItems(controller, clear)) { Report("Inventory removal failed. Try again once the player is ready."); return false; }
         if (OriginalAppearance.appearance.saved) RestoreAppearance(controller, OriginalAppearance, false);
         FTransform transform{};
         transform.Translation = location;
@@ -282,7 +287,7 @@ namespace LocalTools {
         auto playerState = Cast<AFortPlayerStateAthena>(controller->GetPlayerState());
         if (!playerState || playerState->IsInAircraft()) { Report("Jump from the bus before using this tool."); return; }
         if (action == ClearInventory) {
-            ClearPlayerItems(controller, true);
+            if (!ClearPlayerItems(controller, true)) { Report("Inventory is not ready to be cleared. Try again."); return; }
             EquipPickaxe(controller);
             Report("Inventory cleared. Pickaxe and building tools kept; automatic refills disabled.");
         } else if (action == SaveSpot) {
