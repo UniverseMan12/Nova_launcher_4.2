@@ -1,7 +1,5 @@
 # NOVA DROP — Fortnite 4.2 Launcher
 
-<img src="desktop/ui/nova-drop.png" width="180" alt="NOVA DROP meteor logo">
-
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
 *NOVA DROP [0.4.0](https://github.com/UniverseMan12/fortnite-4-2-launcher/releases/tag/v0.4.0) is the current regular release, with game installation from Play, three modes and delayed random Thanos reselection.*
