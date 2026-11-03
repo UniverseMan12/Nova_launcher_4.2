@@ -13,7 +13,10 @@ export function prepareLocker(directory, {workspaces, current, backend} = {}) {
       if (!entry.isDirectory() || !/^[a-f0-9]{16}$/.test(entry.name)) continue;
       const root = path.join(workspaces, entry.name);
       if (path.resolve(root) === path.resolve(current)) continue;
-      if (fs.existsSync(path.join(root, '.complete'))) candidates.push(path.join(root, 'vendor/LawinServer/profiles/athena.json'));
+      const complete = path.join(root, '.complete'), profile = path.join(root, 'vendor/LawinServer/profiles/athena.json');
+      // A prepared-but-never-played payload contains freshly copied defaults.
+      // Only a profile written after preparation is evidence of a used locker.
+      if (fs.existsSync(complete) && fs.existsSync(profile) && fs.statSync(profile).mtimeMs > fs.statSync(complete).mtimeMs) candidates.push(profile);
     }
   }
   if (backend) candidates.push(path.join(backend, 'profiles/athena.json'));

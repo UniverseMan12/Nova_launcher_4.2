@@ -1,34 +1,35 @@
 {
-    "backend":  {
-                    "repository":  "https://github.com/Lawin0129/LawinServer.git",
-                    "commit":  "36385a150d786561acdd056651b3b15a11280bf3"
-                },
-    "launcherCommit":  "c6f82298b167ef2076bb59dc621f13dc5bd8d390",
-    "gameServerCommit":  "10c659028ad9d6816f78226483f11a884bf81f57",
-    "gameServerBuildCommit":  "1562a467694f98444c16ee2284a1eff5057f2b81",
-    "gameServerArchive":  "https://nightly.link/UniverseMan12/Nova_launcher_4.2/actions/artifacts/13091703062.zip",
-    "gameServerArchiveSha256":  "fd86ea05f7e049369911179bc0af6fa78ac96872d42ae49f58f23ea67dedbc45",
-    "previousGameServerSha256s":  [
-                                      "7b825bfa081151b58db35414e835b9c92fa296e192f934dbe500fb099b1faf9a",
-                                      "8db85724388c33c5ca090cda8a0cc7c4a0be4247ced08498569ec5c359a85a8e",
-                                      "3f97ac64bca54fa758e768df17e054cb3be0e303ae97eba32c636738ad01f21a",
-                                      "0955985cf02d0318b76ee62abde3e4063883de93dfb2aa7fb49a9680a2f7319c",
-                                      "243741cea29487a2718c50945d72d238993105b41c084fc988dc8159c27e4007",
-                                      "e292d83c61166e356fdd7888740b1e3f4e4ea2e4a6e06160411f61276802dc12",
-                                      "3630a20e719b86238074467979c18dd48f172da3e4bb95a1b5aea6223d8cbf36",
-                                      "66de2f075f21a020ecef860b7b6f846bbe105f17a826a7e9bb9723cf0f83e5e3",
-                                      "453967a7e09a7b9e2e820ebb2567afb6c27d9e110e9f54d8e65c916a407d46c6",
-                                      "df77fbe5f19b26ae5ed47cf2f361a7fae173120f8f3b31f4175b8e3809f5896d",
-                                      "4f8cb2bb70711e20fcafe065a6112e6b483ee2006f4319812e27a3038b56d476",
-                                      "0e9ca72275e0bd0c7b4c6aa4a01fe643ec38d95f9631d1a21980b34410e7045d",
-                                      "75d8b32eb93cb1a66e6594dfdde024e929a4342f025d6faa921939a4b36c6dda",
-                                      "d92b56df48d1dc7e7de9bea843f7a38a050e9a19565068caf1d019e5a253195d",
-                                      "5c898810f41344de82d5911c3249d2c84decbac4df6605b83ca305218328fa67"
-                                  ],
-    "dlls":  {
-                 "sinum.dll":  "fb69e9ee715f5cbbdadd0e8e3cb07ee37b9dc1ac41f8ea04ebee66e4f7026f72",
-                 "console.dll":  "a4873bd206a1bbf05eea868d28f4850942fed8eb55a465ecc05604c5bc9c43c7",
-                 "memory.dll":  "09678b68e73eeb4463e3b442e0982eba7ff08b07df0614b12a02ed4c9f17fb7a",
-                 "reboot.dll":  "ea242ca57d74ebb0d39cbabba71ef5ba58787b828da39455904fc57afe70cef2"
-             }
+  "backend": {
+    "repository": "https://github.com/Lawin0129/LawinServer.git",
+    "commit": "36385a150d786561acdd056651b3b15a11280bf3"
+  },
+  "launcherCommit": "c6f82298b167ef2076bb59dc621f13dc5bd8d390",
+  "gameServerCommit": "10c659028ad9d6816f78226483f11a884bf81f57",
+  "gameServerBuildCommit": "f00e67f5979ceb8c7558aa5060e9aa281d5c0e3f",
+  "gameServerArchive": "https://nightly.link/UniverseMan12/Nova_launcher_4.2/actions/artifacts/13260540748.zip",
+  "gameServerArchiveSha256": "dec7666285d66cb2692997ff5e3dd1b9b6ada6a89a8400b0499c109e7cce7eed",
+  "previousGameServerSha256s": [
+    "ea242ca57d74ebb0d39cbabba71ef5ba58787b828da39455904fc57afe70cef2",
+    "7b825bfa081151b58db35414e835b9c92fa296e192f934dbe500fb099b1faf9a",
+    "8db85724388c33c5ca090cda8a0cc7c4a0be4247ced08498569ec5c359a85a8e",
+    "3f97ac64bca54fa758e768df17e054cb3be0e303ae97eba32c636738ad01f21a",
+    "0955985cf02d0318b76ee62abde3e4063883de93dfb2aa7fb49a9680a2f7319c",
+    "243741cea29487a2718c50945d72d238993105b41c084fc988dc8159c27e4007",
+    "e292d83c61166e356fdd7888740b1e3f4e4ea2e4a6e06160411f61276802dc12",
+    "3630a20e719b86238074467979c18dd48f172da3e4bb95a1b5aea6223d8cbf36",
+    "66de2f075f21a020ecef860b7b6f846bbe105f17a826a7e9bb9723cf0f83e5e3",
+    "453967a7e09a7b9e2e820ebb2567afb6c27d9e110e9f54d8e65c916a407d46c6",
+    "df77fbe5f19b26ae5ed47cf2f361a7fae173120f8f3b31f4175b8e3809f5896d",
+    "4f8cb2bb70711e20fcafe065a6112e6b483ee2006f4319812e27a3038b56d476",
+    "0e9ca72275e0bd0c7b4c6aa4a01fe643ec38d95f9631d1a21980b34410e7045d",
+    "75d8b32eb93cb1a66e6594dfdde024e929a4342f025d6faa921939a4b36c6dda",
+    "d92b56df48d1dc7e7de9bea843f7a38a050e9a19565068caf1d019e5a253195d",
+    "5c898810f41344de82d5911c3249d2c84decbac4df6605b83ca305218328fa67"
+  ],
+  "dlls": {
+    "sinum.dll": "fb69e9ee715f5cbbdadd0e8e3cb07ee37b9dc1ac41f8ea04ebee66e4f7026f72",
+    "console.dll": "a4873bd206a1bbf05eea868d28f4850942fed8eb55a465ecc05604c5bc9c43c7",
+    "memory.dll": "09678b68e73eeb4463e3b442e0982eba7ff08b07df0614b12a02ed4c9f17fb7a",
+    "reboot.dll": "0bbb38e22a0af887d728fc13be527ebe85d2b3d9ab774e472180793aaac88158"
+  }
 }

@@ -24,7 +24,7 @@ function seed() {
   const array = tag('UserActionBindings', 'ArrayProperty', Buffer.concat([int(1),
     tag('UserActionBindings', 'StructProperty', binding, Buffer.concat([str('FortActionKeyMapping'), Buffer.alloc(16)]))]), str('StructProperty'));
   const engineVersion = Buffer.alloc(10); engineVersion.writeUInt16LE(4); engineVersion.writeUInt16LE(20, 2); engineVersion.writeUInt32LE(4072250, 6);
-  return Buffer.concat([int(MAGIC), int(516), engineVersion, str('++Fortnite+Release-4.2'), int(15), array, boolTag(true), none(), int(0)]);
+  return Buffer.concat([int(MAGIC), int(516), engineVersion, str('++Fortnite+Release-4.2'), int(15), array, none(), int(0)]);
 }
 function parse(buffer) {
   if (!Buffer.isBuffer(buffer) || buffer.length > MAX || buffer.length < 55 || buffer.readUInt32LE(0) !== MAGIC || buffer.readUInt32LE(4) !== 516 || buffer.readUInt32LE(14) !== 4072250) throw Error('Unsupported Fortnite settings archive.');
@@ -99,7 +99,9 @@ function rewrite(buffer, {key, toggle}) {
       for (const parent of [row.keyName, row.key, parsed.elements, parsed.array]) adjust(parent, delta);
     }
   }
-  if (toggle !== undefined) {
+  if (toggle === null) {
+    if (parsed.toggle) changes.push({start:parsed.toggle.start,end:parsed.toggle.end,data:Buffer.alloc(0)});
+  } else if (toggle !== undefined) {
     if (parsed.toggle) changes.push({start: parsed.toggle.boolOffset, end: parsed.toggle.boolOffset + 1, data: Buffer.from([toggle ? 1 : 0])});
     else changes.push({start: parsed.end, end: parsed.end, data: boolTag(toggle)});
   }
@@ -112,6 +114,7 @@ function rewrite(buffer, {key, toggle}) {
 function autoSprint(buffer) {
   const value = buffer?.length ? buffer : seed();
   const data = parse(value);
+  if (data.sprint.length > 1) throw Error("Ambiguous sprint bindings.");
   // The native preset supplies Sprint+W when no user override exists.
   return rewrite(value, {key: data.sprint.length ? 'W' : undefined, toggle: false});
 }
@@ -120,7 +123,7 @@ function restorePreferences(incoming, original) {
   const after = parse(incoming);
   if (before.sprint.length > 1 || after.sprint.length > 1) throw Error('Ambiguous sprint bindings.');
   const key = after.sprint[0]?.value === 'W' ? (before.sprint[0]?.value ?? 'None') : undefined;
-  return rewrite(incoming, {key, toggle: before.toggle ? !!(original?.length ? original : seed())[before.toggle.boolOffset] : true});
+  return rewrite(incoming, {key, toggle: before.toggle ? !!(original?.length ? original : seed())[before.toggle.boolOffset] : null});
 }
 function read(file, enabled) {
   const original = fs.existsSync(file) ? fs.readFileSync(file) : null;

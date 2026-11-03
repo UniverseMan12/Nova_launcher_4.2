@@ -15,6 +15,7 @@ test('W sprint uses hold mode and returns custom sprint controls byte for byte',
     assert.deepEqual(input.autoSprint(enabled), enabled);
   }
   const defaultSave = input.autoSprint(null), parsed = input.parse(defaultSave);
+  assert.deepEqual(input.restorePreferences(defaultSave,null),input.seed(),'An unknown default toggle is not replaced by a guessed preference');
   assert.equal(parsed.sprint[0].value,'W'); assert.equal(defaultSave[parsed.toggle.boolOffset],0);
 });
 

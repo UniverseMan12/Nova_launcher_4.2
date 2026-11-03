@@ -3,7 +3,15 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*NOVA DROP [0.4.2](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.2) is the current regular release, with built-in launcher updates. Choose when to download, install and restart.*
+*NOVA DROP [0.4.3](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.3) adds Auto-Sprint, improved reset tools, saved cosmetics, larger text and a changelog after updates.*
+
+## Controls and updates
+
+Enable **Settings → Auto-Sprint** to sprint while holding **W**. It applies on the next game launch and uses the game’s keyboard input. Turning it off restores the previous sprint binding and toggle preference. Other controls are kept.
+
+Your selected outfit, backpack, pickaxe, glider and emotes are saved outside the version-specific launcher files. The first updated launch imports your previous locker choices. Only cosmetics present in the installed Fortnite 4.2 game can be rendered.
+
+After updating, **What’s new** appears once with the changes for the installed version. Close it with **Let’s play**, the close button or Escape; reopen it from the sidebar at any time.
 
 ## Download the game in the launcher
 
@@ -13,11 +21,11 @@ You can cancel at any stage. Choose the same location to resume the downloaded b
 
 The built-in download targets **4.2 / CL-4072250** only. It does not install or run the extra Epic launcher/redistributable installers found in the source archive. The Visual C++ x64 runtime is still a separate prerequisite.
 
-## Three game modes
+## Choose your game
 
 - **Classic:** the normal island and practice tools.
-- **Thanos:** the ordinary Infinity Gauntlet playlist on the full island, with its own Fortnite × Avengers artwork. No fixed Showdown arena or additional Showdown respawns.
-- **Infinity Showdown:** a compact fixed arena, randomly assigned Thanos, retained equipment and ten extra respawns. After Thanos dies, a shared 20-second cooldown precedes the next random draw. Every eligible player can be selected, including the previous Thanos once ready.
+- **Thanos:** choose **Thanos normal** under the shared Thanos card for the ordinary Infinity Gauntlet playlist on the full island. No fixed Showdown arena or additional Showdown respawns.
+- **Infinity Showdown:** choose this option under the same Thanos card for a compact fixed arena, randomly assigned Thanos, retained equipment and ten extra respawns. After Thanos dies, a shared 20-second cooldown precedes the next random draw. Every eligible player can be selected, including the previous Thanos once ready.
 
 The selected mode is preselected in Reboot; click **Start server**, then **Play** in Fortnite. Friends joining your session use the host's rules.
 
@@ -35,7 +43,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For **0.4.2**, choose **[NOVA-DROP-0.4.2-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.2-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
+For **0.4.3**, choose **[NOVA-DROP-0.4.3-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.3/NOVA-DROP-0.4.3-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.3-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.3/NOVA-DROP-0.4.3-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
@@ -148,6 +156,8 @@ After the server starts, open **Local tools** at the top of the Reboot window. J
 These controls require exactly one loopback-connected player. Spawned pickups are limited to 100 outstanding items, and actions are rate-limited to avoid accidental click spam. Saved positions reset when you leave. You can also press F8 and enter:
 
 ```text
+cheat local reset
+cheat local clearinventory
 cheat local respawn
 cheat local heal
 cheat local loot
@@ -170,6 +180,8 @@ cheat local autoheal on
 Use `off` instead of `on` to disable a toggle. The message under the buttons reports the result or explains why an action is unavailable. These are local practice tools; they do not add support for other game versions.
 
 Validation on 4.2: server startup, joining through Play, the new tabs, Gauntlet spawning, chest loot, cleanup of tool-spawned pickups, saving/returning to a position and pawn replacement were exercised in a local session. The starter-kit action also returned both weapons and supplies. Full respawn after a real elimination and complete Thanos transformation/abilities still need verification.
+
+**Full reset (exit Thanos)** removes the Gauntlet, restores your normal character and spawns a fresh pawn with 100 health and 100 shield. It clears weapons, supplies and materials while keeping the pickaxe and building tools, and turns automatic refills off. **Clear inventory** clears the same items; if transformed, it also exits Thanos through a fresh respawn. **Respawn me** keeps ordinary equipment but removes the transformation. These tools work on your loopback-connected player in Classic/ordinary Thanos; Infinity Showdown retains its own respawn rules. A match that has already ended must be restarted. Enable **Practice respawn** before dying in a sandbox session.
 
 ## Setup details
 

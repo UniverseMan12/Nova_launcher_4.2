@@ -23,6 +23,11 @@ test('first launch after update migrates a previous locker once and never overwr
   const backend=path.join(current,'vendor/LawinServer');
   fs.mkdirSync(path.join(old,'vendor/LawinServer/profiles'),{recursive:true});fs.writeFileSync(path.join(old,'.complete'),'verified');
   fs.writeFileSync(path.join(old,'vendor/LawinServer/profiles/athena.json'),JSON.stringify(profile()));
+  fs.utimesSync(path.join(old,'.complete'),new Date(1000),new Date(1000));
+  const unused=path.join(workspaces,'c'.repeat(16));fs.mkdirSync(path.join(unused,'vendor/LawinServer/profiles'),{recursive:true});
+  fs.writeFileSync(path.join(unused,'vendor/LawinServer/profiles/athena.json'),JSON.stringify({stats:{attributes:{favorite_character:''}},items:{}}));
+  fs.writeFileSync(path.join(unused,'.complete'),'verified');
+  fs.utimesSync(path.join(unused,'vendor/LawinServer/profiles/athena.json'),new Date(2000),new Date(2000));
   fs.mkdirSync(path.join(backend,'profiles'),{recursive:true});fs.writeFileSync(path.join(backend,'profiles/athena.json'),JSON.stringify({stats:{attributes:{favorite_character:''}},items:{}}));
   prepareLocker(persistent,{workspaces,current,backend});
   const saved=JSON.parse(fs.readFileSync(path.join(persistent,'locker.json')));assert.equal(saved.selected.favorite_character,'knight');

@@ -1,5 +1,16 @@
 # Desktop release checks
 
+## NOVA DROP 0.4.3 — gameplay tools and launcher polish
+
+- Based on regular 0.4.2. The unconfirmed bot-lobby branch is not included.
+- 68 Node tests passed locally, including binary client-settings transformations, exact control restoration, malformed-data rejection, cloud length/hash agreement, locker persistence across separate payloads, migration, version notifications and multiplayer worker cleanup.
+- The existing 4.2 ClientSettings archive was read without changing it: Auto-Sprint changed only the intended binding/toggle and restoring the preferences reproduced the original bytes exactly.
+- [Native build 41693414627](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41693414627) compiled source `f00e67f5979ceb8c7558aa5060e9aa281d5c0e3f` and passed the native Infinity rules tests. Artifact `13260540748` matched archive SHA-256 `dec7666285d66cb2692997ff5e3dd1b9b6ada6a89a8400b0499c109e7cce7eed`; the included DLL and checksum matched `0bbb38e22a0af887d728fc13be527ebe85d2b3d9ab774e472180793aaac88158`.
+- [Initial Windows validation 41693121715](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41693121715) passed the desktop UI tests, packaged/portable smoke tests and real 0.4.2-to-0.4.3 upgrades for both editions. That preliminary artifact still contained the previous server and is **not the release package**. The final package must use the new DLL pin above.
+- Hidden, isolated launcher previews were inspected at 1200×820 and 940×700, including the shared Thanos selector, larger text and changelog. No live Fortnite session was controlled for these checks.
+- In-game validation of Auto-Sprint, Black Knight/glider replication and repeated full resets remains pending. Compilation and backend/UI tests do not establish that these engine paths work in a live 4.2 match.
+
+
 ## NOVA DROP 0.4.2 — regular updater release
 
 - Based on the regular 0.4.1 release. Native server, game modes and logo are unchanged; the unconfirmed bot prototype remains separate.

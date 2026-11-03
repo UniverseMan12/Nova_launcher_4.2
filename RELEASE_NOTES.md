@@ -1,29 +1,25 @@
-# NOVA DROP 0.4.2 — launcher updates
+# NOVA DROP 0.4.3 — your next drop, a little better
 
-Regular Windows x64 update for Fortnite 4.2 / CL-4072250. Based on the regular 0.4.1 release, with its teal orbit logo and existing gameplay. The separate bot-lobby prototype is not included.
+Regular Windows x64 update for Fortnite 4.2 / CL-4072250, based on 0.4.2. The separate bot-lobby prototype is not included.
 
-## Update when you choose
+## New
 
-- Checks for newer regular GitHub releases at startup. Automatic checks can be switched off.
-- Adds a visible **Launcher updates** button and an update notification above Play.
-- **Download update** shows progress and supports cancellation. **Later** lets you keep playing.
-- **Update and restart** installs only when requested and after the current game session or game download has stopped.
-- Supports both installed and portable launchers, preserving settings and the Fortnite folder.
-- Checks the release source, package size and SHA-256 before installation. Corrupt or incomplete downloads leave the existing launcher in place.
-- Keeps a backup when replacing the portable EXE and reports installation errors after restart.
+- **Auto-Sprint** in Settings: sprint while holding W. Applies on the next launch; switching it off restores the previous sprint controls.
+- **Full reset (exit Thanos)** and **Clear inventory** in Reboot, with visible console instructions: `cheat local reset`, `cheat local clearinventory` and `cheat local respawn`.
+- A single **Thanos** card using the previous Infinity Showdown image. Choose **Thanos normal** or **Infinity Showdown** underneath it.
+- A changelog after updating, with rounded corners and a blurred backdrop. It appears once per update and can be reopened through **What’s new**.
+- Larger supporting text, clearer controls and a restrained teal visual refresh.
 
-Version 0.4.1 and older require one manual upgrade: run **NOVA-DROP-0.4.2-x64-nsis.exe** to update an installed copy, or use **NOVA-DROP-0.4.2-x64-portable.exe**. Later published releases can be downloaded and installed inside the launcher. Updates transfer the complete launcher package; Fortnite does not need to be downloaded again.
+## Fixes
 
-## Requirements and limits
+- Reset removes the Gauntlet through its native unequip path, restores the original body before spawning and re-equips the pickaxe. Empty persistent gadget stacks no longer bypass removal.
+- Reset actions avoid using a character pointer after Fortnite has replaced or destroyed it. Automatic supply refills are disabled when clearing inventory.
+- Per-player cosmetic loadouts are requested and applied after loading; default character parts no longer overwrite existing parts. The pawn receives selected glider, contrail and other cosmetic references.
+- Locker choices and selected variants persist outside version-specific launcher workspaces and migrate from a previous installation.
+- Cloud settings metadata uses the exact downloaded binary bytes for length and checksums. Auto-Sprint preserves original sprint preferences on disk.
 
-Windows 10/11 x64 and the Visual C++ x64 runtime are required. Node.js and Git are not needed by EXE users. Fortnite game files remain separate. Friends need the same LAN or private VPN, such as Hamachi or Radmin VPN.
+## Updating
 
-Executables remain unsigned. Updates require access to GitHub and write access to the launcher location; the normal per-user installer and a writable portable folder are supported. An update is never scheduled for unattended installation. GitHub checks can be delayed by rate limits or network outages.
+From **0.4.2**, choose **Launcher updates → Check → Download update → Update and restart** after stopping the current session. Versions 0.4.1 and older need one manual upgrade using the installer or portable EXE. The Fortnite installation stays in place; launcher updates still transfer the complete launcher package.
 
-Classic, ordinary Thanos and Infinity Showdown retain their existing behavior and limits. See [RELEASE_QA.md](https://github.com/UniverseMan12/Nova_launcher_4.2/blob/v0.4.2/RELEASE_QA.md) for the validation record.
-
-## Validation
-
-60 Node tests and 15 desktop UI tests passed. Real 0.4.1-to-0.4.2 upgrades passed for both the installed and portable editions on an isolated Windows runner, including restart, retained settings/game paths and folders with spaces and special characters. The EXEs are the unchanged, checksum-verified artifacts from [build 41681911937](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41681911937).
-
-The included `launcher-updates.png` demonstrates the update controls with a fictional 0.4.3 offer; the version released here is **0.4.2**.
+Full reset and inventory tools apply to the local player in Classic/ordinary Thanos. Infinity Showdown keeps its established random selection, 20-second handover delay and respawn rules. Only cosmetics included in Fortnite 4.2 can be displayed. In-game validation is recorded separately in RELEASE_QA.md; automated checks do not replace a real match test.
