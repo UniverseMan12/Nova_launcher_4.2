@@ -1,4 +1,4 @@
-# NOVA DROP — Fortnite 4.2 Launcher
+# NOVA DROP - Fortnite 4.2 Launcher
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
