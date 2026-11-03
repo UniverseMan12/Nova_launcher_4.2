@@ -1,6 +1,6 @@
-# NOVA DROP — Fortnite 4.2 Launcher
+# NOVA DROP - Fortnite 4.2 Launcher
 
-<img src="desktop/ui/nova-drop.png" width="180" alt="NOVA DROP meteor logo">
+<img src="docs/thanos-dancing.gif" width="360" alt="Thanos dancing">
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
@@ -24,7 +24,7 @@ The selected mode is preselected in Reboot; click **Start server**, then **Play*
 
 ## Launcher and multiplayer
 
-The launcher includes a simpler Play screen, original portal logo and startup animation, locally bundled Season 4 artwork, saved setup choices and copy/paste invitations for private multiplayer. Component preparation runs automatically at launch; manual checks are under **Settings → Repair and diagnostics**. Friends still need the same LAN or private VPN, such as Hamachi or Radmin VPN. See [release notes](RELEASE_NOTES.md) and [current QA](RELEASE_QA.md).
+The launcher includes a simpler Play screen, a teal orbit logo and startup animation, locally bundled Season 4 artwork, saved setup choices and copy/paste invitations for private multiplayer. Component preparation runs automatically at launch; manual checks are under **Settings → Repair and diagnostics**. Friends still need the same LAN or private VPN, such as Hamachi or Radmin VPN. See [release notes](RELEASE_NOTES.md) and [current QA](RELEASE_QA.md).
 
 ## Infinity Showdown
 

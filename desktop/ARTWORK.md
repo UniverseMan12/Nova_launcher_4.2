@@ -15,7 +15,11 @@ Fortnite artwork belongs to its respective rights holders; these sources are att
 
 ## NOVA DROP identity
 
-`ui/nova-drop.png` is the original NOVA DROP meteor emblem, generated with the built-in image-generation tool on November 1, 2026. The transparent PNG is used in the sidebar and startup screen. `scripts/create-icon.mjs` copies the unchanged image into the build resources; electron-builder converts it to the Windows icon. The previous `ui/logo.svg` is retained as an unused legacy asset. No Epic/Fortnite logo is reproduced in the NOVA DROP emblem.
+`ui/nova-drop.png` is the teal orbit and star emblem supplied by the repository owner on November 3, 2026. The 1254 × 1254 transparent PNG is copied unchanged from the attachment and used in the sidebar and startup screen. `scripts/create-icon.mjs` copies it into the build resources; electron-builder converts it to the Windows icon. No image-generation tool was used for this replacement. Source SHA-256: `00af8064ff12420a511ab0c7d3d34d8d2d4d05d8d9ccf3f02fb5f973149b9229`.
+
+`docs/thanos-dancing.gif` is the owner's supplied animation, optimized for the GitHub README to 360 × 202 pixels at 8 frames per second, retaining its approximately 75-second duration and watermark. It replaces the standalone logo in the README.
+
+The previous meteor emblem was generated on November 1, 2026 and is retained in Git history. Its original generation prompt is recorded below. The older `ui/logo.svg` remains an unused legacy asset.
 
 Generation prompt:
 

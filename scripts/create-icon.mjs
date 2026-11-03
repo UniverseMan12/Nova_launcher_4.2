@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { ROOT } from '../src/config.js';
-// Keep the generated NOVA DROP emblem unchanged, including its alpha channel.
+// Keep the owner-supplied NOVA DROP emblem unchanged, including its alpha channel.
 // electron-builder converts this PNG to the Windows ICO at packaging time.
 const source=path.join(ROOT,'desktop','ui','nova-drop.png');
 const png=fs.readFileSync(source);
