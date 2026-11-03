@@ -20,15 +20,15 @@ const exists=file=>fs.access(file).then(()=>true).catch(()=>false);
 async function until(check,message,timeout=90000){const end=Date.now()+timeout;while(Date.now()<end){if(await check())return;await delay(250);}throw new Error(message);}
 async function port(){const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
 async function processes(target){const {stdout}=await ps('foreach($p in [Diagnostics.Process]::GetProcesses()){try{if($p.MainModule.FileName -eq $env:NOVA_TEST_TARGET){$p.Id}}catch{}finally{$p.Dispose()}}',{NOVA_TEST_TARGET:target});return stdout.trim().split(/\s+/).filter(Boolean).map(Number);}
-const oldHashes={nsis:'a7e0d1c4c9e4723b0733f5bfd8155feb0a3ba76f4c85c8ed73a18811361fa540',portable:'8ae100d149bebeacf18301b93c571e997730983d555df73659d671da0d42070a'};
+const oldHashes={nsis:'134c55d37fb13a452f822080f07e57934200618a29d5caf069e8c6df1cef9f59',portable:'be85233b41827a794f34e6602633dffca2d4ce3f54396f09c350a9129559d741'};
 let target,browser,oldChild;
 try {
   assert.equal(await fileHash(path.join(root,'dist/win-unpacked/resources/update/install-update.ps1')),await fileHash(path.join(root,'desktop/install-update.ps1')));
   for(const kind of ['portable','nsis']) {
     const testRoot=path.join(temporary,kind+" with Ü spaces & apostrophe's");await fs.mkdir(testRoot);
     const cache=path.join(testRoot,'cache');await fs.mkdir(cache);
-    const oldName=`NOVA-DROP-0.4.1-x64-${kind}.exe`,old=path.join(testRoot,oldName);
-    const oldURL=`https://github.com/${REPOSITORY}/releases/download/v0.4.1/${oldName}`;
+    const oldName=`NOVA-DROP-0.4.2-x64-${kind}.exe`,old=path.join(testRoot,oldName);
+    const oldURL=`https://github.com/${REPOSITORY}/releases/download/v0.4.2/${oldName}`;
     const response=await fetch(oldURL);assert(response.ok,`Previous release download failed: ${response.status}`);
     // Fixed previous-release checksum makes the upgrade test independent of mutable metadata.
     await fs.writeFile(old,new Uint8Array(await response.arrayBuffer()));assert.equal(await fileHash(old),oldHashes[kind]);
@@ -47,14 +47,14 @@ try {
     const oldClosed=new Promise(resolve=>oldChild.once('exit',resolve));
     await until(async()=>{try{return (await fetch(`http://127.0.0.1:${debugPort}/json/version`,{signal:AbortSignal.timeout(500)})).ok;}catch{return false;}},'Old launcher did not open.');
     browser=await chromium.connectOverCDP(`http://127.0.0.1:${debugPort}`);
-    const page=browser.contexts()[0].pages()[0];await expect(page.locator('#app-version')).toHaveText('0.4.1');
+    const page=browser.contexts()[0].pages()[0];await expect(page.locator('#app-version')).toHaveText('0.4.2');
     const packageFile=path.join(root,'dist',`NOVA-DROP-${version}-x64-${kind}.exe`);
     const bytes=await fs.readFile(packageFile),sha256=await fileHash(packageFile);
     const name=path.basename(packageFile),url=`https://github.com/${REPOSITORY}/releases/download/v${version}/${name}`;
     const sumURL=`https://github.com/${REPOSITORY}/releases/download/v${version}/SHA256SUMS.txt`,sums=`${sha256}  ${name}\n`;
     const metadata={tag_name:`v${version}`,draft:false,prerelease:false,assets:[{name,size:bytes.length,browser_download_url:url},{name:'SHA256SUMS.txt',size:Buffer.byteLength(sums),browser_download_url:sumURL}]};
     let handedOff;
-    const updater=new LauncherUpdates({currentVersion:'0.4.1',kind,cache,fetchImpl:async requested=>new Response(requested===url?bytes:requested===sumURL?sums:JSON.stringify(metadata)),install:details=>launchUpdateHelper({...details,target,cache,helperSource:path.join(root,'desktop/install-update.ps1'),parentPid:oldChild.pid,quit:()=>{void page.evaluate(()=>window.launcher.close()).catch(()=>{});}}).then(result=>handedOff=result)});
+    const updater=new LauncherUpdates({currentVersion:'0.4.2',kind,cache,fetchImpl:async requested=>new Response(requested===url?bytes:requested===sumURL?sums:JSON.stringify(metadata)),install:details=>launchUpdateHelper({...details,target,cache,helperSource:path.join(root,'desktop/install-update.ps1'),parentPid:oldChild.pid,quit:()=>{void page.evaluate(()=>window.launcher.close()).catch(()=>{});}}).then(result=>handedOff=result)});
     await updater.check();assert.equal(updater.state.phase,'available');
     await updater.download();assert.equal(updater.state.phase,'ready');
     await updater.install();await oldClosed;await browser.close();browser=null;
@@ -74,10 +74,11 @@ try {
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(data,'settings.json'))),settings);
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(data,'update-preferences.json'))),{checkOnStart:false});
     for(const pid of await processes(target))await execute('taskkill.exe',['/PID',String(pid),'/T','/F'],{windowsHide:true}).catch(()=>{});
-    console.log(`PASS: real 0.4.1 -> ${version} ${kind} update, restart, preserved settings and paths with spaces/special characters.`);
+    console.log(`PASS: real 0.4.2 -> ${version} ${kind} update, restart, preserved settings and paths with spaces/special characters.`);
     target=null;oldChild=null;
   }
   await fs.copyFile(path.join(root,'test-results/launcher-updates.png'),path.join(root,'dist/launcher-updates.png'));
+  await fs.copyFile(path.join(root,'test-results/launcher-changelog.png'),path.join(root,'dist/launcher-changelog.png'));
 }finally{
   await browser?.close().catch(()=>{});
   if(target)for(const pid of await processes(target))await execute('taskkill.exe',['/PID',String(pid),'/T','/F'],{windowsHide:true}).catch(()=>{});

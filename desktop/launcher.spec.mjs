@@ -10,12 +10,44 @@ test.beforeEach(async () => {
   const env = { ...process.env, LAUNCHER_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], env });
   page = await app.firstWindow();
-  await expect(page.locator('#app-version')).toHaveText('0.4.2');
+  await expect(page.locator('#app-version')).toHaveText('0.4.3');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);
 });
 test.afterEach(async () => { await app?.close(); fs.rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); });
+
+test('Auto-Sprint persists and cannot be changed during a session', async () => {
+  await page.locator('[data-page="setup"]').click();
+  await page.locator('#auto-sprint').check();
+  await expect.poll(()=>JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).autoSprint).toBe(true);
+  await page.reload();await page.locator('[data-page="setup"]').click();
+  await expect(page.locator('#auto-sprint')).toBeChecked();
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',{busy:true,phase:'launch',events:[],addresses:[]}));
+  await expect(page.locator('#auto-sprint')).toBeDisabled();
+});
+
+test('upgrade changelog is modal, readable, dismisses once and can be reopened', async () => {
+  await expect(page.locator('#changelog')).not.toBeVisible();
+  await app.close();
+  fs.writeFileSync(path.join(userData,'release-history.json'),JSON.stringify({seenVersion:'0.4.2'}));
+  const env={...process.env,LAUNCHER_TEST_DATA:userData};delete env.ELECTRON_RUN_AS_NODE;
+  app=await electron.launch({args:['.'],env});page=await app.firstWindow();
+  await expect(page.locator('#changelog')).toBeVisible();
+  await expect(page.locator('#changelog-version')).toHaveText('VERSION 0.4.3');
+  await expect(page.locator('#changelog-items')).toContainText('Auto-Sprint');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.screenshot({path:'test-results/launcher-changelog.png'});
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(940,700));
+  expect(await page.locator('#changelog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.locator('#changelog-done').click();
+  await expect(page.locator('#changelog')).not.toBeVisible();
+  expect(JSON.parse(fs.readFileSync(path.join(userData,'release-history.json'),'utf8')).seenVersion).toBe('0.4.3');
+  await page.reload();await expect(page.locator('#changelog')).not.toBeVisible();
+  await page.locator('#open-changelog').click();await expect(page.locator('#changelog')).toBeVisible();
+  await page.keyboard.press('Escape');await expect(page.locator('#changelog')).not.toBeVisible();
+  await expect(page.locator('#open-changelog')).toBeFocused();
+});
 
 test('launcher update preference persists and development builds cannot install', async () => {
   await page.locator('#open-updates').click();
@@ -31,17 +63,17 @@ test('launcher update preference persists and development builds cannot install'
 
 test('update notification, later, progress and session installation guard are visible', async () => {
   await page.emulateMedia({reducedMotion:'reduce'});
-  await sendUpdate({phase:'available',version:'0.4.3',message:'NOVA DROP 0.4.3 is available.',checkOnStart:true});
+  await sendUpdate({phase:'available',version:'0.4.4',message:'NOVA DROP 0.4.4 is available.',checkOnStart:true});
   await expect(page.locator('#launcher-update')).toBeVisible();
   await expect(page.locator('#update-download')).toBeVisible();
   await expect(page.locator('#update-install')).toBeHidden();
   await page.locator('#update-later').click();
   await expect(page.locator('#launcher-update')).toBeHidden();
   await page.locator('#open-updates').click();
-  await sendUpdate({phase:'downloading',version:'0.4.3',received:25,total:100,message:'Downloading the launcher update...'});
+  await sendUpdate({phase:'downloading',version:'0.4.4',received:25,total:100,message:'Downloading the launcher update...'});
   await expect(page.locator('#update-progress')).toHaveJSProperty('value',25);
   await expect(page.locator('#update-cancel')).toBeVisible();
-  await sendUpdate({phase:'ready',version:'0.4.3',message:'Update downloaded. Install and restart when you are ready.'});
+  await sendUpdate({phase:'ready',version:'0.4.4',message:'Update downloaded. Install and restart when you are ready.'});
   await expect(page.locator('#update-install')).toBeEnabled();
   const busyState={busy:true,phase:'launch',message:'Session running',events:[],addresses:[]};
   await app.evaluate(({BrowserWindow},state)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',state),busyState);
@@ -83,7 +115,8 @@ test('invalid installation fails visibly and allows another attempt', async () =
 });
 
 test('Infinity Showdown selects hosting and joining leaves rules to the host', async () => {
-  await page.locator('[data-rules="infinity"]').click();
+  await page.locator('[data-rules="thanos"]').click();
+  await page.locator('#thanos-variant').selectOption('infinity');
   await expect(page.locator('[data-mode="host"]')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#rules-description')).toContainText('10 respawns');
   await expect(page.locator('#mode-note')).toContainText('click Start Bus');
@@ -91,7 +124,7 @@ test('Infinity Showdown selects hosting and joining leaves rules to the host', a
   await page.locator('main').evaluate(el=>el.scrollTop=0);
   await page.screenshot({path:'test-results/infinity-showdown.png'});
   await page.locator('[data-mode="join"]').click();
-  await expect(page.locator('[data-rules="infinity"]')).toBeDisabled();
+  await expect(page.locator('#thanos-variant')).toBeDisabled();
   await expect(page.locator('#rules-description')).toContainText('Your host chooses');
   await page.locator('[data-mode="host"]').click();
   await page.locator('[data-rules="classic"]').click();
@@ -110,12 +143,12 @@ test('renderer has no Node access and blocks injected script markup in errors', 
   expect(await page.locator('#error-banner img').count()).toBe(0);
 });
 
-test('ordinary Thanos has distinct artwork, persists and leaves join rules to the host', async () => {
+test('one Thanos card selects either ruleset, persists and leaves join rules to the host', async () => {
   await page.locator('[data-rules="thanos"]').click();
   await expect(page.locator('#rules-description')).toContainText('Full map');
   await expect(page.locator('#rules-description')).toContainText('No Showdown respawns');
   await expect(page.locator('#mode-note')).toContainText('Thanos is preselected');
-  await expect(page.locator('.hero-art')).toHaveAttribute('src','art/thanos-gauntlet.jpg');
+  await expect(page.locator('.hero-art')).toHaveAttribute('src','thanos.png');
   await expect(page.locator('.hero-art')).toHaveJSProperty('complete',true);
   expect(await page.locator('.hero-art').evaluate(image=>image.naturalWidth)).toBeGreaterThan(500);
   await expect.poll(()=>JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).gameMode).toBe('thanos');
@@ -128,7 +161,8 @@ test('ordinary Thanos has distinct artwork, persists and leaves join rules to th
     expect(await page.locator('.rules-picker').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
     await page.screenshot({path:`test-results/thanos-${width}.png`});
   }
-  await page.locator('[data-rules="infinity"]').click();
+  await page.locator('[data-rules="thanos"]').click();
+  await page.locator('#thanos-variant').selectOption('infinity');
   await expect(page.locator('.hero-art')).toHaveAttribute('src','thanos.png');
   await page.locator('[data-mode="join"]').click();
   await expect(page.locator('[data-rules="thanos"]')).toBeDisabled();

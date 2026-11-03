@@ -1,3 +1,4 @@
+import { WhatsNew } from './whats-new.mjs';
 import { app, BrowserWindow, ipcMain, dialog, shell, clipboard } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -117,7 +118,9 @@ else {
     else if(result.version===app.getVersion())updater.set({phase:'current',message:`Updated to NOVA DROP ${app.getVersion()}.`});
     fs.unlinkSync(path.join(updateCache(),'update-result.json'));
   }catch{}
-  handle('initial', () => ({ ...state, settings: settings(), packaged: app.isPackaged,update:updateState() }));
+  const whatsNew=new WhatsNew({directory:app.getPath('userData'),version:app.getVersion(),existingSettings:fs.existsSync(settingsPath())});
+  handle('initial', () => ({ ...state, settings: settings(), packaged: app.isPackaged,update:updateState(), whatsNew:whatsNew.snapshot() }));
+  handle('acknowledgeChanges',()=>whatsNew.acknowledge());
   handle('updateCheck',()=>updater.check());
   handle('updateDownload',()=>updater.download());
   handle('updateCancel',()=>updater.cancel());

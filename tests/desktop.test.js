@@ -8,13 +8,13 @@ import { prepareWorkspace } from '../desktop/bootstrap.mjs';
 import { validateOptions, normalizeSettings } from '../desktop/options.mjs';
 
 test('corrupt saved settings recover without losing valid user selections', () => {
-  for (const value of [null, 'broken', [], 42, {gamePath:[],host:{},mode:'invalid'}]) assert.deepEqual(normalizeSettings(value), {mode:'solo',gameMode:'classic',gamePath:'',host:''});
-  assert.deepEqual(normalizeSettings({mode:'join',gamePath:'C:/game',host:'FN42:25.1.2.3',gameMode:'infinity',unknown:1}), {mode:'join',gameMode:'infinity',gamePath:'C:/game',host:'FN42:25.1.2.3'});
+  for (const value of [null, 'broken', [], 42, {gamePath:[],host:{},mode:'invalid'}]) assert.deepEqual(normalizeSettings(value), {autoSprint:false,mode:'solo',gameMode:'classic',gamePath:'',host:''});
+  assert.deepEqual(normalizeSettings({mode:'join',gamePath:'C:/game',host:'FN42:25.1.2.3',gameMode:'infinity',unknown:1}), {autoSprint:false,mode:'join',gameMode:'infinity',gamePath:'C:/game',host:'FN42:25.1.2.3'});
 });
 
 test('desktop launch requests reject unsupported actions and missing paths', () => {
   for (const value of [null, {}, { mode: 'shell', gamePath: 'C:/game' }, { mode: 'solo', gamePath: '' }]) assert.throws(() => validateOptions(value));
-  assert.deepEqual(validateOptions({ mode: 'join', gamePath: ' C:/game ', host: ' 25.1.2.3 ', unexpected: true }), { mode: 'join', gamePath: 'C:/game', host: '25.1.2.3', gameMode: 'classic' });
+  assert.deepEqual(validateOptions({ mode: 'join', gamePath: ' C:/game ', host: ' 25.1.2.3 ', unexpected: true }), { autoSprint:false, mode: 'join', gamePath: 'C:/game', host: '25.1.2.3', gameMode: 'classic' });
   assert.equal(validateOptions({mode:'host',gamePath:'C:/game',gameMode:'infinity'}).gameMode,'infinity');
   assert.equal(validateOptions({mode:'solo',gamePath:'C:/game',gameMode:'thanos'}).gameMode,'thanos');
   assert.equal(normalizeSettings({gameMode:'thanos'}).gameMode,'thanos');

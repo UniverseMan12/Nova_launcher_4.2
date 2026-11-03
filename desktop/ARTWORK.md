@@ -24,3 +24,7 @@ The previous meteor emblem was generated on November 1, 2026 and is retained in 
 Generation prompt:
 
 > Use case: logo-brand. Create a polished original emblem for NOVA DROP, a private Fortnite Chapter 1 Season 4 (version 4.2) launcher. Asset type: square desktop app icon and launcher brand mark. A bold angular meteor descending diagonally from upper right to lower left, its sculpted comet trail forming a subtle N silhouette, with a small four-point cosmic spark carved into the meteor head. Fortnite Season 4 inspired stylized game art: confident chunky silhouette, crisp beveled facets, luminous icy cyan edges, vivid electric violet core, a restrained warm golden impact accent. Premium and energetic, readable at 32 pixels, balanced centered composition, ample clear margin around the complete emblem. Transparent background, real alpha, clean isolated shape, no square backdrop, no environment, no mockup, no text, no letters as text, no watermark, no official Epic or Fortnite logo. Make one finished logo emblem, not a sheet of variations. Broad solid shapes with controlled glow rather than thin fiddly lines.
+
+## 0.4.3 mode picker
+
+At the owner's request, ordinary Thanos and Infinity Showdown now share the existing owner-supplied `ui/thanos.png` on one Thanos card and hero. A selector chooses the rules. No generated image is included in this update. The old `ui/art/thanos-gauntlet.jpg` is no longer displayed.

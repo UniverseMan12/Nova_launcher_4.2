@@ -5,6 +5,7 @@ const invoke = async (name, ...args) => {
   return result.value;
 };
 contextBridge.exposeInMainWorld('launcher', {
+  acknowledgeChanges: () => invoke('acknowledgeChanges'),
   initial: () => invoke('initial'), browse: () => invoke('browse'),
   downloadGame: () => invoke('downloadGame'),
   start: (action, options) => invoke('start', action, options), stop: () => invoke('stop'),

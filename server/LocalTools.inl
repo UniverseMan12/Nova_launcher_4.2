@@ -159,7 +159,10 @@ namespace LocalTools {
         if (gauntlet) if (auto item = inventory->FindItemInstance(gauntlet)) {
             const auto guid = item->GetItemEntry()->GetItemGuid();
             const int count = item->GetItemEntry()->GetCount();
+            const bool previousGadgets = Globals::bEnableAGIDs;
+            Globals::bEnableAGIDs = true;
             inventory->RemoveItem(guid, nullptr, count, true);
+            Globals::bEnableAGIDs = previousGadgets;
         }
         if (all) {
             std::vector<std::pair<FGuid,int>> remove;
@@ -177,6 +180,15 @@ namespace LocalTools {
         inventory->Update();
     }
 
+    static void EquipPickaxe(AFortPlayerControllerAthena* controller) {
+        auto inventory = controller->GetWorldInventory();
+        if (!inventory || !controller->GetMyFortPawn()) return;
+        if (auto pickaxe = inventory->GetPickaxeInstance()) {
+            const auto guid = pickaxe->GetItemEntry()->GetItemGuid();
+            controller->ServerExecuteInventoryItemHook(controller, guid);
+            controller->ClientEquipItem(guid, true);
+        }
+    }
     static bool RespawnPlayer(AFortPlayerControllerAthena* controller, bool clear = false) {
         auto mode = Cast<AFortGameModeAthena>(GetWorld()->GetGameMode());
         auto state = Cast<AFortPlayerStateAthena>(controller->GetPlayerState());
@@ -196,6 +208,9 @@ namespace LocalTools {
         auto spawn = FindObject<UFunction>(L"/Script/Engine.GameModeBase.SpawnDefaultPawnAtTransform");
         if (!spawn) { Report("This build does not expose pawn spawning."); return false; }
         const bool transformed = HasGauntlet(controller->GetWorldInventory());
+        if (transformed && (!Addresses::RemoveGadgetData || !Addresses::ApplyGadgetData)) {
+            Report("This build cannot safely remove the transformation."); return false;
+        }
         if (transformed && !OriginalAppearance.appearance.saved) {
             Report("Normal appearance is not ready. Rejoin the match before resetting."); return false;
         }
@@ -226,6 +241,7 @@ namespace LocalTools {
         controller->ClientClearDeathNotification();
         controller->RespawnPlayerAfterDeath(false);
         if (auto restart = controller->FindFunction("ClientRestart")) controller->ProcessEvent(restart, &pawn);
+        EquipPickaxe(controller);
         pawn->ForceNetUpdate();
         oldPawn = Cast<AFortPawn>(oldPawnRef.Get());
         if (oldPawn && oldPawn != pawn && oldPawn->IsValidLowLevel() && !oldPawn->IsActorBeingDestroyed()) oldPawn->K2_DestroyActor();
@@ -267,6 +283,7 @@ namespace LocalTools {
         if (!playerState || playerState->IsInAircraft()) { Report("Jump from the bus before using this tool."); return; }
         if (action == ClearInventory) {
             ClearPlayerItems(controller, true);
+            EquipPickaxe(controller);
             Report("Inventory cleared. Pickaxe and building tools kept; automatic refills disabled.");
         } else if (action == SaveSpot) {
             SavedLocation = pawn->GetActorLocation(); SavedRotation = controller->GetControlRotation();

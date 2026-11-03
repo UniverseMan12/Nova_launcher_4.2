@@ -1,6 +1,6 @@
 {
   "name": "fortnite-backend-local",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "private": true,
   "description": "NOVA DROP launcher for Fortnite 4.2",
   "type": "module",

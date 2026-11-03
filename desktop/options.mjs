@@ -5,12 +5,14 @@ export function validateOptions(value) {
   if (host.length > 64) throw new Error('The host address is too long.');
   const gameMode = value.gameMode ?? 'classic';
   if (!['classic', 'thanos', 'infinity'].includes(gameMode)) throw new Error('Choose Classic, Thanos or Infinity Showdown.');
-  return { mode: value.mode, gamePath: value.gamePath.trim(), host, gameMode };
+  if (value.autoSprint !== undefined && typeof value.autoSprint !== 'boolean') throw new Error('Invalid Auto-Sprint setting.');
+  return { autoSprint: value.autoSprint === true, mode: value.mode, gamePath: value.gamePath.trim(), host, gameMode };
 }
 
 export function normalizeSettings(value) {
   const saved = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
   return {
+    autoSprint: saved.autoSprint === true,
     mode: ['solo','host','join'].includes(saved.mode) ? saved.mode : 'solo',
     gameMode: ['classic','thanos','infinity'].includes(saved.gameMode) ? saved.gameMode : 'classic',
     gamePath: typeof saved.gamePath === 'string' && saved.gamePath.length <= 2048 ? saved.gamePath : '',

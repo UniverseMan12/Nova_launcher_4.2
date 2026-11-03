@@ -1,7 +1,24 @@
 const $ = id => document.getElementById(id);
 let mode = 'solo', busy = false, gameMode = 'classic', latestState, initialized = false;
 let displayedInstall;
-let launcherUpdate, updateDismissed=false;
+let launcherUpdate, updateDismissed=false, releaseChanges;
+function showChanges() {
+  if (!releaseChanges) return;
+  $('changelog-version').textContent='VERSION '+releaseChanges.version;
+  $('changelog-items').replaceChildren(...releaseChanges.changes.map(change=>{
+    const item=document.createElement('section'), title=document.createElement('h3'), description=document.createElement('p');
+    title.textContent=change.title;description.textContent=change.text;item.append(title,description);return item;
+  }));
+  if (!$('changelog').open) $('changelog').showModal();
+}
+async function closeChanges() {
+  try {await window.launcher.acknowledgeChanges();$('changelog').close();}
+  catch(error) {$('changelog-error').textContent=error.message;}
+}
+$('open-changelog').onclick=showChanges;
+$('changelog-close').onclick=closeChanges;
+$('changelog-done').onclick=closeChanges;
+$('changelog').addEventListener('cancel',event=>{event.preventDefault();closeChanges();});
 function renderUpdate(value) {
   launcherUpdate=value;
   if(['available','ready','downloading','installing','error'].includes(value.phase)&&!updateDismissed)$('launcher-update').hidden=false;
@@ -20,7 +37,7 @@ function renderUpdate(value) {
   $('open-updates').textContent=['available','ready'].includes(value.phase)?'Update available ↻':'Launcher updates ↻';
 }
 function saveSettings() {
-  if (initialized && !busy) return safely(() => window.launcher.saveSettings({mode, gameMode, gamePath:$('game-path').value, host:$('host-address').value}));
+  if (initialized && !busy) return safely(() => window.launcher.saveSettings({autoSprint:$('auto-sprint').checked, mode, gameMode, gamePath:$('game-path').value, host:$('host-address').value}));
 }
 const titles = { play: 'Back to the island.', setup: 'A little setup. Then play.', activity: 'Your session, step by step.' };
 const notes = {
@@ -49,14 +66,17 @@ function selectMode(value) {
 function renderRules() {
   const showdown = gameMode === 'infinity', thanos = gameMode === 'thanos', local = mode !== 'join';
   document.querySelectorAll('[data-rules]').forEach(el => {
-    const selected = el.dataset.rules === gameMode;
+    const selected = el.dataset.rules === 'thanos' ? (thanos || showdown) : gameMode === 'classic';
     el.classList.toggle('selected',selected); el.setAttribute('aria-pressed',selected);
     el.disabled = busy || mode === 'join';
   });
+  $('thanos-options').hidden = !(thanos || showdown);
+  $('thanos-variant').disabled = busy || !local;
+  if (thanos || showdown) $('thanos-variant').value = gameMode;
   document.querySelector('.hero').classList.toggle('showdown',(showdown || thanos) && local);
   document.querySelector('.hero').classList.toggle('thanos',thanos && local);
   const art = document.querySelector('.hero-art'), useThanos = (showdown || thanos) && local;
-  const source = thanos && local ? 'art/thanos-gauntlet.jpg' : useThanos ? 'thanos.png' : 'art/season4-showdown.jpg';
+  const source = useThanos ? 'thanos.png' : 'art/season4-showdown.jpg';
   if (art.getAttribute('src') !== source) art.src = source;
   art.alt = useThanos ? 'Thanos holding the Infinity Gauntlet' : 'Carbide and Omega face off in Fortnite Season 4';
   $('hero-title').innerHTML = thanos && local ? 'WIELD<br>THE POWER.' : useThanos ? 'INFINITY.<br>YOUR WAY.' : 'BRACE<br>FOR IMPACT.';
@@ -94,7 +114,7 @@ function render(state) {
     displayedInstall = state.installedPath; $('game-path').value = state.installedPath; updateFolder();
   }
   renderRules();
-  for (const el of document.querySelectorAll('.mode, #game-path, #host-address, #browse, #check, #prepare, #launch, #edit-folder')) el.disabled = busy;
+  for (const el of document.querySelectorAll('.mode, #game-path, #host-address, #browse, #check, #prepare, #launch, #edit-folder, #auto-sprint')) el.disabled = busy;
   $('download-progress').hidden = state.action !== 'download' || Boolean(state.installedPath);
   const transfer = state.progress;
   const labels = {downloading:'Downloading',retrying:'Connection interrupted — resuming',verifying:'Checking download',inspecting:'Checking archive',extracting:'Unpacking game',checking:'Verifying Fortnite 4.2'};
@@ -157,18 +177,20 @@ async function start(action) {
   }
   if (!$('game-path').value.trim()) { showPage('setup'); $('game-path').focus(); throw new Error('Choose your Fortnite folder first.'); }
   if (action === 'launch' && mode === 'join' && !$('host-address').value.trim()) { showPage('play'); $('host-address').focus(); throw new Error('Enter your host’s VPN or LAN IPv4 address.'); }
-  await window.launcher.start(action, { mode, gamePath: $('game-path').value, host: $('host-address').value, gameMode });
+  await window.launcher.start(action, { mode, gamePath: $('game-path').value, host: $('host-address').value, gameMode, autoSprint:$('auto-sprint').checked });
   if (action === 'launch') showPage('play'); else showPage('activity');
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => showPage(el.dataset.page)));
 document.querySelectorAll('[data-mode]').forEach(el => el.addEventListener('click', () => selectMode(el.dataset.mode)));
-document.querySelectorAll('[data-rules]').forEach(el => el.addEventListener('click', () => selectRules(el.dataset.rules)));
+document.querySelectorAll('[data-rules]').forEach(el => el.addEventListener('click', () => selectRules(el.dataset.rules === 'thanos' ? $('thanos-variant').value : 'classic')));
 document.querySelectorAll('[data-link]').forEach(el => el.addEventListener('click', () => safely(() => window.launcher.link(el.dataset.link))));
 const browseFolder = () => safely(async () => { const selected = await window.launcher.browse(); if (selected) { $('game-path').value = selected; updateFolder(); } });
 $('edit-folder').onclick = browseFolder;
 $('back-play').onclick = () => showPage('play');
 $('game-path').oninput = updateFolder;
 $('host-address').oninput = saveSettings;
+$('auto-sprint').onchange = saveSettings;
+$('thanos-variant').onchange = () => selectRules($('thanos-variant').value);
 $('browse').onclick = browseFolder;
 for (const [button, action] of [['launch','launch'], ['check','check'], ['prepare','prepare']]) $(button).onclick = () => safely(() => start(action));
 $('stop').onclick = () => safely(() => window.launcher.stop());
@@ -188,11 +210,14 @@ setTimeout(() => { $('startup').hidden = true; }, 1200);
 safely(async () => {
   const initial = await window.launcher.initial();
   renderUpdate(initial.update);
+  releaseChanges=initial.whatsNew;
   showPage('play');
   $('app-version').textContent = initial.version;
   $('game-path').value = initial.settings.gamePath || '';
   $('host-address').value = initial.settings.host || '';
+  $('auto-sprint').checked = initial.settings.autoSprint === true;
   gameMode = ['classic','thanos','infinity'].includes(initial.settings.gameMode) ? initial.settings.gameMode : 'classic';
   selectMode(['solo','host','join'].includes(initial.settings.mode) ? initial.settings.mode : 'solo');
   updateFolder(); render(initial); initialized = true;
+  if (releaseChanges?.show) showChanges();
 });

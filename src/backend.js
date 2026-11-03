@@ -4,6 +4,9 @@ import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ROOT } from './config.js';
+import { prepareLocker } from './locker.js';
+import { inputHotfix } from './input-settings.js';
+import inputSettings from '../scripts/backend-extensions/launcher-input.cjs';
 import { validateHost } from './multiplayer.js';
 
 export async function assertFreePort(port) {
@@ -13,16 +16,26 @@ export async function assertFreePort(port) {
     probe.listen(port, '127.0.0.1', () => probe.close(resolve));
   });
 }
-export async function startBackend({ port = 3551, xmppPort = 80, gameHost = '127.0.0.1', directory = path.join(ROOT, 'vendor', 'LawinServer'), signal } = {}) {
+export async function startBackend({ port = 3551, xmppPort = 80, gameHost = '127.0.0.1', directory = path.join(ROOT, 'vendor', 'LawinServer'), autoSprint = false, profileDirectory = path.join(ROOT, 'data/profile'), legacyWorkspaces, currentWorkspace = ROOT, settingsRoot, signal } = {}) {
   signal?.throwIfAborted();
   if (gameHost !== '127.0.0.1') gameHost = validateHost(gameHost);
   await assertFreePort(port); await assertFreePort(xmppPort);
+  signal?.throwIfAborted();
+  if (autoSprint === true) {
+    const localData = settingsRoot || process.env.LOCALAPPDATA;
+    const file = localData ? path.join(localData,'LawinServer/ClientSettings/ClientSettings-4072250.Sav') : path.join(directory,'ClientSettings/ClientSettings-4072250.Sav');
+    try { inputSettings.read(file, true); }
+    catch { throw new Error('Auto-Sprint could not read your saved Fortnite 4.2 controls. Turn Auto-Sprint off in Settings to launch with your existing controls.'); }
+  }
+  prepareLocker(profileDirectory, {workspaces:legacyWorkspaces, current:currentWorkspace, backend:directory});
+  const inputFile = path.join(directory, 'CloudStorage/DefaultInput.ini');
+  fs.writeFileSync(inputFile, inputHotfix(fs.readFileSync(inputFile, 'utf8'), autoSprint === true));
   fs.mkdirSync(path.join(ROOT, 'logs'), { recursive: true });
   const log = fs.createWriteStream(path.join(ROOT, 'logs', 'backend.log'), { flags: 'a' });
   log.write(`\n--- ${new Date().toISOString()} ---\n`);
   const child = spawn(process.execPath, ['index.js'], {
     cwd: directory, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, PORT: String(port), XMPP_PORT: String(xmppPort), LAUNCHER_GAME_HOST: gameHost }
+    env: { ...process.env, PORT: String(port), XMPP_PORT: String(xmppPort), LAUNCHER_GAME_HOST: gameHost, LAUNCHER_AUTO_SPRINT: autoSprint === true ? '1' : '0', LAUNCHER_PROFILE_DIR: profileDirectory, ...(settingsRoot ? {LOCALAPPDATA:settingsRoot} : {}) }
   });
   let error;
   child.on('error', e => { error = e; });

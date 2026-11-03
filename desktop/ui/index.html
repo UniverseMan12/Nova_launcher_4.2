@@ -16,7 +16,7 @@
 <button class="nav" data-page="setup"><span aria-hidden="true">⚙</span> Settings</button>
 <button class="nav" data-page="activity"><span aria-hidden="true">≋</span> Activity <small id="activity-count">0</small></button>
 </nav>
-<div class="sidebar-bottom"><span class="legacy-tag">CHAPTER 01 / SEASON 04</span><button id="open-updates" class="text-button">Launcher updates ↻</button><button class="text-button" data-link="releases">Downloads ↗</button><button class="text-button" data-link="github">GitHub ↗</button><span class="version">v<span id="app-version">0.4.2</span></span></div>
+<div class="sidebar-bottom"><span class="legacy-tag">CHAPTER 01 / SEASON 04</span><button id="open-changelog" class="text-button">What’s new ↗</button><button id="open-updates" class="text-button">Launcher updates ↻</button><button class="text-button" data-link="releases">Downloads ↗</button><button class="text-button" data-link="github">GitHub ↗</button><span class="version">v<span id="app-version">0.4.3</span></span></div>
 </aside>
 <main>
 <div class="topline"><h1 id="page-title">Back to the island.</h1><div class="status-pill"><i id="status-dot"></i><span id="top-status">READY</span></div></div>
@@ -33,9 +33,9 @@
 </div>
 <div class="rules-picker" role="group" aria-label="Game mode">
 <button class="rules-choice selected" data-rules="classic" aria-pressed="true"><img src="art/season4.jpg" alt=""><span><strong>Classic</strong><small>Your island, your rules</small></span><span class="choice-dot"></span></button>
-<button class="rules-choice" data-rules="thanos" aria-pressed="false"><img src="art/thanos-gauntlet.jpg" alt=""><span><strong>Thanos <b>ALPHA</b></strong><small>Full island. Find the Gauntlet.</small></span><span class="choice-dot"></span></button>
-<button class="rules-choice" data-rules="infinity" aria-pressed="false"><img src="thanos.png" alt=""><span><strong>Infinity Showdown <b>ALPHA</b></strong><small>Become Thanos. Own the endgame.</small></span><span class="choice-dot"></span></button>
+<button class="rules-choice" data-rules="thanos" aria-pressed="false"><img src="thanos.png" alt=""><span><strong>Thanos <b>ALPHA</b></strong><small>Wield the Infinity Gauntlet</small></span><span class="choice-dot"></span></button>
 </div>
+<div id="thanos-options" class="thanos-options" hidden><label for="thanos-variant">HOW DO YOU WANT TO PLAY?</label><select id="thanos-variant"><option value="thanos">Thanos normal</option><option value="infinity">Infinity Showdown</option></select></div>
 <div id="rules-description" class="rules-description">Solo practice or a private match with friends.</div>
 <div class="play-panel">
 <div class="session-options">
@@ -56,6 +56,7 @@
 </section>
 <section id="page-setup" class="page" aria-label="Settings" hidden>
 <div class="panel setup-panel"><span class="eyebrow">ONE-TIME SETUP</span><h2>Where's your Fortnite?</h2><p>Select your extracted Fortnite 4.2 folder. It contains <strong>FortniteGame</strong> and <strong>Engine</strong>.</p><label for="game-path">GAME FOLDER</label><div class="path-row"><input id="game-path" placeholder="Folder containing FortniteGame and Engine" spellcheck="false"><button id="browse" class="secondary">Browse folder</button></div><p class="setup-tip">After selecting a folder, return to Play. Downloads and checks happen when you launch.</p><button id="back-play" class="secondary accent">Back to Play →</button><details class="advanced"><summary>Repair and diagnostics</summary><div class="setup-actions"><button id="check" class="secondary">Check installation</button><button id="prepare" class="secondary">Prepare components</button></div></details></div>
+<div class="panel gameplay-settings"><span class="eyebrow">YOUR CONTROLS</span><label class="sprint-option"><input type="checkbox" id="auto-sprint"><span><strong>Auto-Sprint</strong><small>Sprint while holding W. Your original sprint controls return when this is off.</small></span></label><p class="small-print">Applies the next time you launch Fortnite. Your other key bindings stay the same.</p></div>
 <div class="setup-bottom"><div class="panel network-panel"><span class="eyebrow">PLAY WITH FRIENDS</span><h3>Host. Copy. Join.</h3><ol><li>Use the same LAN or private VPN network.</li><li>The host launches and copies an invitation.</li><li>Friends select Join friend and paste it.</li></ol><button class="text-button" data-link="hamachi">Get Hamachi ↗</button></div><div class="panel"><span class="eyebrow">NEED THE BASICS?</span><h3>Ready for 4.2.</h3><p>Use your own game installation and the Visual C++ x64 runtime.</p><div class="link-row"><button class="text-button" data-link="game">Game files ↗</button><button class="text-button" data-link="runtime">Visual C++ ↗</button></div><p class="small-print">Private community launcher. Not affiliated with Epic Games.</p></div></div>
 </section>
 <section id="page-activity" class="page" aria-label="Activity" hidden>
@@ -64,5 +65,11 @@
 <div class="session-status" role="status" aria-live="polite"><span id="status-icon" aria-hidden="true">◈</span><div><strong id="status-heading">YOUR NEXT STEP</strong><p id="status-message">Choose a game mode and launch.</p></div><span id="status-tail">4.2</span></div>
 <div id="error-banner" class="error-banner" role="alert" hidden></div>
 </main>
-</div><script src="renderer.js"></script>
+</div>
+<dialog id="changelog" aria-labelledby="changelog-title" aria-describedby="changelog-intro">
+<div class="changelog-top"><img src="nova-drop.png" alt=""><span class="eyebrow">FRESH FROM THE DROP</span><button id="changelog-close" aria-label="Close what's new">×</button></div>
+<span id="changelog-version" class="release-badge"></span><h2 id="changelog-title">Your next drop,<br>a little better.</h2><p id="changelog-intro">Here’s what changed in this version.</p>
+<div id="changelog-items"></div><p id="changelog-error" role="alert"></p>
+<button id="changelog-done" class="launch-button">Let’s play <span aria-hidden="true">→</span></button>
+</dialog><script src="renderer.js"></script>
 </body></html>

@@ -69,7 +69,8 @@ process.on('message', async message => {
       status('Components ready', 'ok');
       if (message.action === 'launch') {
         await runSession({
-          startBackend: () => startBackend({ gameHost: host, signal: controller.signal }),
+          startBackend: () => startBackend({ gameHost: host, signal: controller.signal, autoSprint: options.autoSprint,
+            profileDirectory: path.join(message.workspace ? path.dirname(message.workspace) : path.join(root, 'data'), 'profile'), legacyWorkspaces: message.workspace, currentWorkspace: root }),
           startGame: (mode, phase) => startGame(mode, phase, { multiplayer: options.mode !== 'solo', gameHost: host, gameMode: options.gameMode }),
           join: options.mode === 'join', signal: controller.signal,
           status: (text, state) => status(text.replace('Ctrl+C stops everything.', 'Use Stop session to close the game.'), state),

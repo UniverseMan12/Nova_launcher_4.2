@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { patchSettings } from './patch-settings.js';
 import { ROOT } from '../src/config.js';
 
 export function patchBackend(directory = path.join(ROOT, 'vendor', 'LawinServer')) {
@@ -90,4 +91,5 @@ express.use((req, res, next) => {`);
   const functions = path.join(directory, 'structure', 'functions.js');
   source = fs.readFileSync(functions, 'utf8').replace('const uuid = require("uuid");', 'const uuid = { v4: require("node:crypto").randomUUID };');
   fs.writeFileSync(functions, source);
+  patchSettings(directory);
 }
