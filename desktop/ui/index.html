@@ -16,10 +16,14 @@
 <button class="nav" data-page="setup"><span aria-hidden="true">⚙</span> Settings</button>
 <button class="nav" data-page="activity"><span aria-hidden="true">≋</span> Activity <small id="activity-count">0</small></button>
 </nav>
-<div class="sidebar-bottom"><span class="legacy-tag">CHAPTER 01 / SEASON 04</span><button class="text-button" data-link="releases">Downloads ↗</button><button class="text-button" data-link="github">GitHub ↗</button><span class="version">v<span id="app-version">0.4.1</span></span></div>
+<div class="sidebar-bottom"><span class="legacy-tag">CHAPTER 01 / SEASON 04</span><button id="open-updates" class="text-button">Launcher updates ↻</button><button class="text-button" data-link="releases">Downloads ↗</button><button class="text-button" data-link="github">GitHub ↗</button><span class="version">v<span id="app-version">0.4.2</span></span></div>
 </aside>
 <main>
 <div class="topline"><h1 id="page-title">Back to the island.</h1><div class="status-pill"><i id="status-dot"></i><span id="top-status">READY</span></div></div>
+<section id="launcher-update" class="update-panel" aria-label="Launcher updates" hidden>
+<div class="update-copy"><strong id="update-title">Launcher updates</strong><p id="update-message" role="status" aria-live="polite"></p><progress id="update-progress" max="100" value="0" aria-label="Launcher update download" hidden></progress><label class="update-preference"><input type="checkbox" id="update-auto" checked> Check when the launcher starts</label></div>
+<div class="update-actions"><button id="update-check" class="secondary">Check now</button><button id="update-download" class="secondary accent" hidden>Download update</button><button id="update-install" class="secondary accent" hidden>Update and restart</button><button id="update-cancel" class="secondary" hidden>Cancel download</button><button id="update-later" class="text-button">Later</button></div>
+</section>
 <section id="page-play" class="page" aria-label="Play">
 <div class="hero">
 <img class="hero-art" src="art/season4-showdown.jpg" alt="Carbide and Omega face off in Fortnite Season 4">

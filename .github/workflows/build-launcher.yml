@@ -30,14 +30,16 @@ jobs:
       - run: npm run package:release
       - run: node scripts/smoke-release.mjs
       - run: node scripts/smoke-portable.mjs
+      - run: node scripts/smoke-update.mjs
       - run: node scripts/release-files.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: NOVA-DROP-0.4.1-Windows-x64
+          name: NOVA-DROP-0.4.2-Windows-x64
           path: |
             dist/*.exe
             dist/SHA256SUMS.txt
             dist/RELEASE-NOTES.md
             dist/launcher-preview.png
+            dist/launcher-updates.png
           if-no-files-found: error
           retention-days: 90

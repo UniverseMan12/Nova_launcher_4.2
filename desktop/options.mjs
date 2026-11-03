@@ -20,8 +20,8 @@ export function normalizeSettings(value) {
 }
 
 export const links = Object.freeze({
-  github: 'https://github.com/UniverseMan12/fortnite-4-2-launcher',
-  releases: 'https://github.com/UniverseMan12/fortnite-4-2-launcher/releases',
+  github: 'https://github.com/UniverseMan12/Nova_launcher_4.2',
+  releases: 'https://github.com/UniverseMan12/Nova_launcher_4.2/releases',
   hamachi: 'https://vpn.net/',
   runtime: 'https://aka.ms/vc14/vc_redist.x64.exe',
   game: 'https://drive.google.com/file/d/1m8VEUcKnxA0UYHt5-txPbRhfbn0OVhEm/view?usp=sharing'

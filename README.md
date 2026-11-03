@@ -44,7 +44,15 @@ For **0.4.1**, choose **NOVA-DROP-0.4.1-x64-nsis.exe** to install, or **NOVA-DRO
 
 **EXE requirements:** Windows 10/11 x64, Fortnite 4.2 files, and the [Visual C++ x64 runtime](https://aka.ms/vc14/vc_redist.x64.exe). **Node.js and Git are not needed by EXE users**: Electron supplies the JavaScript runtime and the backend source/dependencies are included. Some pinned upstream DLLs download directly on first use. Game files and Hamachi are separate. Settings and runtime data live under `%APPDATA%/FortniteLauncher`, so the install directory can remain read-only. The portable EXE also uses this per-user data directory.
 
-The release executables are **unsigned**. See [release checks and known limits](RELEASE_QA.md) before distributing them. No automatic updater or firewall modification is included.
+The release executables are **unsigned**. See [release checks and known limits](RELEASE_QA.md) before distributing them. The 0.4.2 update feature verifies the download size and SHA-256 against the GitHub release; it is not a publisher signature. The launcher does not modify the firewall.
+
+## Launcher updates — coming in 0.4.2
+
+Open **Launcher updates** in the sidebar to check whenever you want. The launcher also checks at startup; switch off **Check when the launcher starts** if you prefer manual checks. An available update appears above Play. Choose **Download update**, then **Update and restart** when ready, or **Later** to keep playing. Downloads can be cancelled and a completed, verified package can be installed later.
+
+Both the Windows installer and portable edition update in place. Settings, the selected Fortnite folder and game files are retained. Installation waits for you to stop any active game session or game download. The portable update keeps a backup of the previous EXE beside the launcher. The updater downloads the full launcher package; it does not download Fortnite again.
+
+Version 0.4.1 and older need one manual upgrade to an updater-enabled build. Future versions still need to be built and published as regular GitHub releases, with both EXEs and **SHA256SUMS.txt**. Only newer regular releases from this repository are offered; prereleases are excluded. No background update service is installed. Source and unpacked development builds do not replace themselves.
 
 ## Installation & downloads
 

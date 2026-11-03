@@ -4,17 +4,56 @@ import os from 'node:os';
 import path from 'node:path';
 
 let app, page, userData;
+const sendUpdate=(value)=>app.evaluate(({BrowserWindow},value)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:update',value),value);
 test.beforeEach(async () => {
   userData = fs.mkdtempSync(path.join(os.tmpdir(), 'launcher-ui-'));
   const env = { ...process.env, LAUNCHER_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], env });
   page = await app.firstWindow();
-  await expect(page.locator('#app-version')).toHaveText('0.4.1');
+  await expect(page.locator('#app-version')).toHaveText('0.4.2');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);
 });
 test.afterEach(async () => { await app?.close(); fs.rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); });
+
+test('launcher update preference persists and development builds cannot install', async () => {
+  await page.locator('#open-updates').click();
+  await expect(page.locator('#launcher-update')).toBeVisible();
+  await expect(page.locator('#update-check')).toBeDisabled();
+  await page.locator('#update-auto').uncheck();
+  await expect.poll(()=>JSON.parse(fs.readFileSync(path.join(userData,'update-preferences.json'),'utf8')).checkOnStart).toBe(false);
+  await page.reload();
+  await page.locator('#open-updates').click();
+  await expect(page.locator('#update-auto')).not.toBeChecked();
+  expect(await page.evaluate(()=>window.launcher.updateInstall().catch(e=>e.message))).toContain('Download and verify');
+});
+
+test('update notification, later, progress and session installation guard are visible', async () => {
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await sendUpdate({phase:'available',version:'0.4.3',message:'NOVA DROP 0.4.3 is available.',checkOnStart:true});
+  await expect(page.locator('#launcher-update')).toBeVisible();
+  await expect(page.locator('#update-download')).toBeVisible();
+  await expect(page.locator('#update-install')).toBeHidden();
+  await page.locator('#update-later').click();
+  await expect(page.locator('#launcher-update')).toBeHidden();
+  await page.locator('#open-updates').click();
+  await sendUpdate({phase:'downloading',version:'0.4.3',received:25,total:100,message:'Downloading the launcher update...'});
+  await expect(page.locator('#update-progress')).toHaveJSProperty('value',25);
+  await expect(page.locator('#update-cancel')).toBeVisible();
+  await sendUpdate({phase:'ready',version:'0.4.3',message:'Update downloaded. Install and restart when you are ready.'});
+  await expect(page.locator('#update-install')).toBeEnabled();
+  const busyState={busy:true,phase:'launch',message:'Session running',events:[],addresses:[]};
+  await app.evaluate(({BrowserWindow},state)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',state),busyState);
+  await expect(page.locator('#update-install')).toBeDisabled();
+  await expect(page.locator('#update-message')).toContainText('Stop your session');
+  await app.evaluate(({BrowserWindow},state)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',{...state,busy:false}),busyState);
+  await expect(page.locator('#update-install')).toBeEnabled();
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(940,700));
+  await expect(page.locator('#update-install')).toBeInViewport();
+  expect(await page.locator('main').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+  await page.screenshot({path:'test-results/launcher-updates.png'});
+});
 
 test('navigation, mode selection and empty setup recovery', async () => {
   await expect(page.getByRole('heading', { name: 'Back to the island.' })).toBeVisible();

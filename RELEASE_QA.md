@@ -1,5 +1,13 @@
 # Desktop release checks
 
+## NOVA DROP 0.4.2 — updater candidate
+
+- Based on the regular 0.4.1 release. Native server, game modes and logo are unchanged; the unconfirmed bot prototype remains separate.
+- Adds automatic startup checks, optional manual checks, explicit download/install controls, SHA-256 verification and Windows replacement helpers for NSIS and portable builds.
+- Local updater tests pass version/feed validation, cancelled and corrupt downloads, cache recovery, session blocking and changed files. Windows helper failure tests confirm that invalid hashes and a cancelled handoff preserve the previous launcher.
+- The Windows build workflow additionally runs the existing launcher checks, update UI tests and real 0.4.1-to-0.4.2 installer/portable upgrade checks on an isolated runner. Results will be recorded after completion.
+- This candidate has not been published as a GitHub release. One manual upgrade from older releases is required to receive future in-app updates. The updater downloads full EXEs, uses the repository's release checksum, and does not provide Authenticode publisher verification.
+
 ## NOVA DROP 0.4.1 — regular logo update
 
 - Scope: the owner-supplied teal orbit-and-star logo, matching startup glow, Windows icon, updated launcher preview and 0.4.1 version labels. Based on the regular 0.4.0 release; the separate bot-lobby prototype is excluded as requested.

@@ -5,12 +5,19 @@ import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validateOptions, normalizeSettings, links } from './options.mjs';
+import { LauncherUpdates } from './updates.mjs';
+import { updateKind, launchUpdateHelper } from './update-install.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const uiURL = pathToFileURL(path.join(directory, 'ui', 'index.html')).href;
 app.setPath('userData', process.env.LAUNCHER_TEST_DATA || path.join(app.getPath('appData'), 'FortniteLauncher'));
 let window, worker, workspace = path.resolve(directory, '..'), closing = false, finished = Promise.resolve();
 let choosingDownloadFolder = false;
+let updater, updatePreferences = {checkOnStart:true};
+const updateCache = () => path.join(app.getPath('userData'),'updates');
+const updatePreferencesFile = () => path.join(app.getPath('userData'),'update-preferences.json');
+function updateState() { return {...updater.snapshot(),checkOnStart:updatePreferences.checkOnStart}; }
+function sendUpdate() { if(window && !window.isDestroyed())window.webContents.send('launcher:update',updateState()); }
 const state = { busy: false, phase: 'idle', message: 'Ready when you are.', events: [], addresses: [], progress: null, installedPath: null, version: app.getVersion() };
 const settingsPath = () => path.join(app.getPath('userData'), 'settings.json');
 function settings() {
@@ -43,6 +50,7 @@ async function stop() {
   await finished;
 }
 function start(action, input, allowDownload = false) {
+  if(updater?.state.phase==='installing')throw new Error('The launcher update is being installed.');
   if (state.busy) throw new Error('A session is already running. Stop it before starting another.');
   if (!['launch', 'check', 'prepare'].includes(action) && !(allowDownload && action === 'download')) throw new Error('Unknown action.');
   const options = validateOptions(input);
@@ -85,17 +93,47 @@ if (!app.requestSingleInstanceLock()) { app.quit(); }
 else {
   app.on('second-instance', () => { if (window?.isMinimized()) window.restore(); window?.focus(); });
   app.on('before-quit', event => {
+    if(updater?.state.phase!=='installing')updater?.cancel();
     if (worker && !closing) { event.preventDefault(); closing = true; stop().finally(() => app.quit()); }
   });
   app.whenReady().then(async () => {
   app.setAppUserModelId('com.universeman.fortnitelauncher');
-  handle('initial', () => ({ ...state, settings: settings(), packaged: app.isPackaged }));
+  try {updatePreferences.checkOnStart=JSON.parse(fs.readFileSync(updatePreferencesFile(),'utf8')).checkOnStart!==false;} catch {}
+  const portableFile=process.env.PORTABLE_EXECUTABLE_FILE;
+  const updateTarget=portableFile || process.execPath;
+  try {
+    const pending=JSON.parse(fs.readFileSync(path.join(updateCache(),'installing.json'),'utf8'));
+    if(pending.target===updateTarget && Date.now()-pending.startedAt<15*60*1000 && Number.isSafeInteger(pending.pid)) {
+      process.kill(pending.pid,0);app.quit();return;
+    }
+  }catch{}
+  const kind=updateKind({packaged:app.isPackaged,portableFile,installed:fs.existsSync(path.join(path.dirname(process.execPath),'Uninstall NOVA DROP.exe'))});
+  updater=new LauncherUpdates({currentVersion:app.getVersion(),kind,cache:updateCache(),enabled:Boolean(kind),onState:sendUpdate,
+    canInstall:()=>!state.busy&&!worker&&!choosingDownloadFolder,
+    install:details=>launchUpdateHelper({...details,target:updateTarget,cache:updateCache(),helperSource:app.isPackaged?path.join(process.resourcesPath,'update','install-update.ps1'):path.join(directory,'install-update.ps1'),quit:()=>app.quit()})});
+  try {
+    const result=JSON.parse(fs.readFileSync(path.join(updateCache(),'update-result.json'),'utf8'));
+    if(!result.success)updater.set({phase:'error',message:`The last update could not finish: ${String(result.message).slice(0,300)}`});
+    else if(result.version===app.getVersion())updater.set({phase:'current',message:`Updated to NOVA DROP ${app.getVersion()}.`});
+    fs.unlinkSync(path.join(updateCache(),'update-result.json'));
+  }catch{}
+  handle('initial', () => ({ ...state, settings: settings(), packaged: app.isPackaged,update:updateState() }));
+  handle('updateCheck',()=>updater.check());
+  handle('updateDownload',()=>updater.download());
+  handle('updateCancel',()=>updater.cancel());
+  handle('updateInstall',()=>updater.install());
+  handle('updatePreference',value=>{
+    if(typeof value!=='boolean')throw new Error('Invalid update preference.');
+    updatePreferences.checkOnStart=value;fs.mkdirSync(app.getPath('userData'),{recursive:true});
+    fs.writeFileSync(updatePreferencesFile(),JSON.stringify(updatePreferences));sendUpdate();return true;
+  });
   handle('browse', async () => {
     const result = await dialog.showOpenDialog(window, { title: 'Select the folder containing FortniteGame and Engine', properties: ['openDirectory'] });
     return result.canceled ? null : result.filePaths[0];
   });
   handle('start', (action,input) => start(action,input));
   handle('downloadGame', async () => {
+    if(updater.state.phase==='installing')throw new Error('The launcher update is being installed.');
     if (state.busy || choosingDownloadFolder) throw new Error('Finish the current action before downloading the game.');
     choosingDownloadFolder = true;
     try {
@@ -137,5 +175,9 @@ else {
   app.on('window-all-closed', () => app.quit());
   await window.loadURL(uiURL);
   window.show();
+  // Checks never download/install automatically and never run in isolated UI/smoke tests.
+  if(kind && updatePreferences.checkOnStart && !process.env.LAUNCHER_TEST_DATA && updater.state.phase!=='error') {
+    const timer=setTimeout(()=>updater.check(),5000);timer.unref();
+  }
   }).catch(error => { console.error(error); app.exit(1); });
 }

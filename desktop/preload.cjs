@@ -12,5 +12,9 @@ contextBridge.exposeInMainWorld('launcher', {
   saveSettings: options => invoke('saveSettings', options),
   link: key => invoke('link', key), logs: () => invoke('logs'),
   minimize: () => invoke('minimize'), close: () => invoke('close'),
+  updateCheck: () => invoke('updateCheck'), updateDownload: () => invoke('updateDownload'),
+  updateCancel: () => invoke('updateCancel'), updateInstall: () => invoke('updateInstall'),
+  updatePreference: value => invoke('updatePreference',value),
+  subscribeUpdate: callback => { const handler=(_event,state)=>callback(state);ipcRenderer.on('launcher:update',handler);return ()=>ipcRenderer.removeListener('launcher:update',handler); },
   subscribe: callback => { const handler = (_event, state) => callback(state); ipcRenderer.on('launcher:state', handler); return () => ipcRenderer.removeListener('launcher:state', handler); }
 });

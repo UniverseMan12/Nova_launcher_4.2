@@ -1,6 +1,24 @@
 const $ = id => document.getElementById(id);
 let mode = 'solo', busy = false, gameMode = 'classic', latestState, initialized = false;
 let displayedInstall;
+let launcherUpdate, updateDismissed=false;
+function renderUpdate(value) {
+  launcherUpdate=value;
+  if(['available','ready','downloading','installing','error'].includes(value.phase)&&!updateDismissed)$('launcher-update').hidden=false;
+  $('update-title').textContent=value.version ? `NOVA DROP ${value.version}` : 'Launcher updates';
+  $('update-message').textContent=value.phase==='ready'&&busy ? 'Update downloaded. Stop your session before restarting the launcher.' : value.message;
+  $('update-auto').checked=value.checkOnStart!==false;
+  const running=['checking','downloading','installing'].includes(value.phase);
+  $('update-check').disabled=running||value.phase==='unsupported';
+  $('update-check').hidden=value.phase==='ready';
+  $('update-download').hidden=!['available','error'].includes(value.phase)||!value.version;
+  $('update-install').hidden=value.phase!=='ready';$('update-install').disabled=busy;
+  $('update-cancel').hidden=value.phase!=='downloading';
+  $('update-later').disabled=value.phase==='installing';
+  $('update-progress').hidden=value.phase!=='downloading';
+  $('update-progress').value=value.total ? Math.round(value.received/value.total*100) : 0;
+  $('open-updates').textContent=['available','ready'].includes(value.phase)?'Update available ↻':'Launcher updates ↻';
+}
 function saveSettings() {
   if (initialized && !busy) return safely(() => window.launcher.saveSettings({mode, gameMode, gamePath:$('game-path').value, host:$('host-address').value}));
 }
@@ -71,6 +89,7 @@ async function safely(action) { try { return await action(); } catch (error) { s
 function render(state) {
   latestState = state;
   busy = state.busy;
+  if(launcherUpdate)renderUpdate(launcherUpdate);
   if (state.installedPath && state.installedPath !== displayedInstall) {
     displayedInstall = state.installedPath; $('game-path').value = state.installedPath; updateFolder();
   }
@@ -157,9 +176,18 @@ $('open-logs').onclick = () => safely(() => window.launcher.logs());
 $('minimize').onclick = () => safely(() => window.launcher.minimize());
 $('close').onclick = () => safely(() => window.launcher.close());
 window.launcher.subscribe(render);
+window.launcher.subscribeUpdate(renderUpdate);
+$('open-updates').onclick=()=>{updateDismissed=false;$('launcher-update').hidden=false;$('launcher-update').scrollIntoView({block:'nearest'});};
+$('update-later').onclick=()=>{updateDismissed=true;$('launcher-update').hidden=true;};
+$('update-check').onclick=()=>{updateDismissed=false;safely(()=>window.launcher.updateCheck());};
+$('update-download').onclick=()=>{updateDismissed=false;safely(()=>window.launcher.updateDownload());};
+$('update-cancel').onclick=()=>safely(()=>window.launcher.updateCancel());
+$('update-install').onclick=()=>safely(()=>window.launcher.updateInstall());
+$('update-auto').onchange=()=>safely(()=>window.launcher.updatePreference($('update-auto').checked));
 setTimeout(() => { $('startup').hidden = true; }, 1200);
 safely(async () => {
   const initial = await window.launcher.initial();
+  renderUpdate(initial.update);
   showPage('play');
   $('app-version').textContent = initial.version;
   $('game-path').value = initial.settings.gamePath || '';
