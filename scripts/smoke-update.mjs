@@ -69,7 +69,7 @@ try {
       const backups=(await fs.readdir(testRoot)).filter(name=>name.includes('.nova-backup-'));
       assert.equal(backups.length,1);assert.equal(await fileHash(path.join(testRoot,backups[0])),oldHashes.portable);
     }else{
-      const {stdout}=await ps('[Diagnostics.FileVersionInfo]::GetVersionInfo($env:NOVA_TEST_TARGET).ProductVersion',{NOVA_TEST_TARGET:target});assert.equal(stdout.trim(),version);
+      const {stdout}=await ps('[Diagnostics.FileVersionInfo]::GetVersionInfo($env:NOVA_TEST_TARGET).ProductVersion',{NOVA_TEST_TARGET:target});assert([version,version+'.0'].includes(stdout.trim()),`Unexpected Windows product version: ${stdout.trim()}`);
     }
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(data,'settings.json'))),settings);
     assert.deepEqual(JSON.parse(await fs.readFile(path.join(data,'update-preferences.json'))),{checkOnStart:false});

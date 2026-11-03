@@ -98,7 +98,8 @@ try {
         $installer.Dispose()
         if(-not (Test-Path -LiteralPath $target)){throw 'The installed launcher could not be found.'}
         $version=[Diagnostics.FileVersionInfo]::GetVersionInfo($target).ProductVersion
-        if($version -ne $request.version){throw 'The installer did not install the requested launcher version.'}
+        # Electron's Windows product resource includes a fourth zero component.
+        if($version -ne $request.version -and $version -ne ($request.version+'.0')){throw "The installer reports version $version instead of $($request.version)."}
     }
     Save-Result $true 'Launcher updated successfully.'
     Start-Launcher
