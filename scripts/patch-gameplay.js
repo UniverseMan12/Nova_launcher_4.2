@@ -2,10 +2,72 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 
+const activationMarker = '// Launcher ability activation v1';
+const upstreamActivationGuard = '    if (Addresses::InternalTryActivateAbility)\n';
+const disabledActivationGuard = `    // 4.2 has the native activation implementation. Keep its prediction/input
+    // cache cleanup and press/release lifecycle, which the replacement omits.
+    if (Addresses::InternalTryActivateAbility && Fortnite_Version != 4.2)
+`;
+const restoredActivationGuard = `    // Shipping clients may omit the native server activation body. Keep
+    // Reboot's server hook, which calls the game's inner activation function.
+${upstreamActivationGuard}`;
+const activationSwap = '        VirtualSwap(FortAbilitySystemComponentAthenaDefault->VFTable, InternalServerTryActivateAbilityIndex, UAbilitySystemComponent::InternalServerTryActivateAbilityHook);';
+const activationConfigured = '        if (Fortnite_Version == 4.2) LauncherGameplayLog("0.4.4 test: Reboot server ability activation hook configured");';
+const occurrences = (text, value) => text.split(value).length - 1;
+
+function replaceUnique(text, before, after, file) {
+  if (occurrences(text, before) !== 1) throw new Error(`Ability activation patch mismatch in ${file}: ${before.slice(0, 90)}`);
+  return text.replace(before, after);
+}
+
+export function patchAbilityActivationInstall(source) {
+  let text = source.replaceAll('\r\n', '\n');
+  const file = 'dllmain.cpp';
+  const include = '#include "LauncherGameplayLog.h"';
+  if (text.includes(activationMarker)) {
+    for (const value of [activationMarker, restoredActivationGuard, upstreamActivationGuard, activationSwap, activationConfigured, include]) {
+      if (occurrences(text, value) !== 1) throw new Error(`Ability activation patch mismatch in ${file}: invalid patched source`);
+    }
+    if (text.includes(disabledActivationGuard) || text.includes('Addresses::InternalTryActivateAbility &&')) throw new Error(`Ability activation patch mismatch in ${file}: disabled hook remains`);
+    return text;
+  }
+  const original = occurrences(text, upstreamActivationGuard);
+  const disabled = occurrences(text, disabledActivationGuard);
+  if (original + disabled !== 1 || text.includes(include) || text.includes(activationConfigured)) throw new Error(`Ability activation patch mismatch in ${file}: ambiguous source`);
+  text = replaceUnique(text, disabled ? disabledActivationGuard : upstreamActivationGuard, restoredActivationGuard, file);
+  if (text.includes('Addresses::InternalTryActivateAbility &&')) throw new Error(`Ability activation patch mismatch in ${file}: unexpected activation guard`);
+  text = replaceUnique(text, '#include <Windows.h>', '#include <Windows.h>\n' + include, file);
+  text = replaceUnique(text, activationSwap, activationSwap + '\n' + activationConfigured, file);
+  return activationMarker + '\n' + text;
+}
+
+export function patchAbilityActivationDiagnostics(source) {
+  let text = source.replaceAll('\r\n', '\n');
+  const file = 'AbilitySystemComponent_Abilities.cpp';
+  const include = '#include "LauncherAbilityDiagnostics.h"';
+  const invalidLog = '\t\tLOG_INFO(LogAbilities, "InternalServerTryActivateAbility. Rejecting ClientActivation of ability with invalid SpecHandle!");';
+  const invalidTrace = '\t\tLauncherAbilityInvalid("invalid-handle", Handle.Handle, InputPressed, PredictionKeySize, PredictionKey && CurrentOffset >= 0 ? *(int16_t*)(__int64(PredictionKey) + CurrentOffset) : 0);';
+  const ability = '\t/* const */ UGameplayAbility * AbilityToActivate = Spec->GetAbility();';
+  const receivedTrace = '\tLauncherAbilityTrace activationTrace(AbilityToActivate, Handle.Handle, InputPressed, PredictionKeySize, PredictionKey && CurrentOffset >= 0 ? *(int16_t*)(__int64(PredictionKey) + CurrentOffset) : 0);';
+  const resultTrace = '\tactivationTrace.Result(res);';
+  if (text.includes(activationMarker)) {
+    for (const value of [activationMarker, include, invalidLog, invalidTrace, ability, receivedTrace, resultTrace]) {
+      if (occurrences(text, value) !== 1) throw new Error(`Ability activation patch mismatch in ${file}: invalid patched source`);
+    }
+    return text;
+  }
+  if (text.includes(include) || text.includes('activationTrace') || text.includes('LauncherAbilityInvalid(')) throw new Error(`Ability activation patch mismatch in ${file}: ambiguous source`);
+  text = replaceUnique(text, '#include "AbilitySystemComponent.h"', '#include "AbilitySystemComponent.h"\n' + include, file);
+  text = replaceUnique(text, invalidLog, invalidTrace + '\n' + invalidLog, file);
+  text = replaceUnique(text, ability, ability + '\n' + receivedTrace, file);
+  text = replaceUnique(text, '\tif (!res)\n', resultTrace + '\n\n\tif (!res)\n', file);
+  return activationMarker + '\n' + text;
+}
+
 export function patchGameplay(root) {
   const directory = path.join(root, 'Project Reboot 3.0');
   const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../server');
-  for (const name of ['LauncherCosmetics.inl', 'LauncherLocalLocker.inl', 'LauncherCharacterParts.h', 'CharacterAppearanceRules.h', 'LauncherGameplayLog.h'])
+  for (const name of ['LauncherCosmetics.inl', 'LauncherLocalLocker.inl', 'LauncherCharacterParts.h', 'CharacterAppearanceRules.h', 'LauncherGameplayLog.h', 'LauncherAbilityDiagnostics.h'])
     fs.copyFileSync(path.join(source, name), path.join(directory, name));
   const edit = (file, pairs, marker = '// Launcher gameplay fixes v1') => {
     const target = path.join(directory, file);
@@ -40,7 +102,7 @@ void AFortPlayerController::InstallLauncherLoadoutHook(UObject* controller) {
     if (Fortnite_Version != 4.2) return;
     auto fn = FindObject<UFunction>(L"/Script/FortniteGame.FortPlayerControllerZone.ServerSendLoadoutConfig");
     const bool hooked = fn && Hooking::MinHook::Hook(controller, fn, LauncherLoadoutReceived, (PVOID*)&LauncherLoadoutOriginal, false, true);
-    LauncherGameplayLog(std::string("0.4.4 test: native ability activation retained; loadout hook=") + (hooked ? "ready" : "unavailable"));
+    LauncherGameplayLog(std::string("0.4.4 test: loadout hook=") + (hooked ? "ready" : "unavailable"));
 }
 `);
   edit('dllmain.cpp', [
@@ -80,12 +142,10 @@ void AFortPlayerController::InstallLauncherLoadoutHook(UObject* controller) {
                 Parts[(int)EFortCustomPartType::Backpack] = backpackPart;
             }`]
   ], marker);
-  edit('dllmain.cpp', [
-    ['    if (Addresses::InternalTryActivateAbility)\n', `    // 4.2 has the native activation implementation. Keep its prediction/input
-    // cache cleanup and press/release lifecycle, which the replacement omits.
-    if (Addresses::InternalTryActivateAbility && Fortnite_Version != 4.2)
-`]
-  ], marker);
+  for (const [file, patch] of [['dllmain.cpp', patchAbilityActivationInstall], ['AbilitySystemComponent_Abilities.cpp', patchAbilityActivationDiagnostics]]) {
+    const target = path.join(directory, file);
+    fs.writeFileSync(target, patch(fs.readFileSync(target, 'utf8')));
+  }
   edit('FortPlayerControllerAthena.cpp', [
     ['\tif (Globals::bNoMCP)\n', '\tif (Fortnite_Version == 4.2) { ControllerAsFort->ApplyCosmeticLoadout(); return; }\n\tif (Globals::bNoMCP)\n']
   ], marker);
