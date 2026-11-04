@@ -155,8 +155,8 @@ async function verifyWorker(main,testRoot,env) {
   const probe=path.join(testRoot,'worker-probe'),workspace=path.join(probe,'workspaces'),missingGame=path.join(probe,'missing-game');
   await fs.mkdir(probe);assert.equal(await exists(missingGame),false);
   const child=spawn(main.exe,[workerFile],{cwd:probe,windowsHide:true,stdio:['ignore','pipe','pipe','ipc'],env:{...env,LAUNCHER_TEST_DATA:probe,ELECTRON_RUN_AS_NODE:'1'}});
-  const messages=[];let stderr='',spawnError,sendError,closedResult;
-  child.stdout.resume();child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-32768);});
+  const messages=[];let stdout='',stderr='',spawnError,sendError,closedResult;
+  child.stdout.on('data',chunk=>{stdout=(stdout+chunk).slice(-32768);});child.stderr.on('data',chunk=>{stderr=(stderr+chunk).slice(-32768);});
   child.on('message',message=>messages.push(message));child.once('error',error=>{spawnError=error;});
   const closed=new Promise(resolve=>child.once('close',(code,signal)=>{closedResult={code,signal};resolve(closedResult);}));
   try {
@@ -167,13 +167,27 @@ async function verifyWorker(main,testRoot,env) {
     if(spawnError)throw spawnError;if(sendError)throw sendError;
     assert.equal(result.code,0,`Updated runtime worker exited ${result.code}: ${stderr}`);
     const prepared=messages.find(message=>message.type==='workspace');
-    assert(prepared,'Updated worker did not prepare its own verified payload.');
+    assert(prepared,`Updated worker did not prepare its own verified payload. Messages: ${JSON.stringify(messages)}. Stderr: ${stderr}. Stdout: ${stdout}`);
     await requireOwnedPath(prepared.root,workspace);
     const failures=messages.filter(message=>message.type==='failure');
     assert.equal(failures.length,1,`Expected one missing-game validation failure; received ${JSON.stringify(messages)}. ${stderr}`);
     assert.match(failures[0].message,/missing FortniteGame/);
     assert.equal(messages.some(message=>message.type==='done'||message.type==='config'),false,'Missing game unexpectedly passed validation.');
     for(const file of files)assert((await fs.stat(file)).isFile(),`Runtime disappeared after its worker check: ${file}`);
+  } catch(error) {
+    // Keep actionable worker errors in the failed-CI artifact before its
+    // temporary installation is removed. No installer/game execution occurs
+    // in this check: it only prepares the payload and rejects a missing game.
+    const destination=path.join(root,'test-results');
+    try {
+      await fs.mkdir(destination,{recursive:true});
+      const manifest=JSON.parse(await fs.readFile(path.join(resources,'payload','payload.json'),'utf8'));
+      const longest=Object.keys(manifest.files).map(relative=>({relative,sourceLength:path.join(resources,'payload',relative).length,destinationLength:path.join(workspace,'0123456789abcdef',relative).length})).sort((a,b)=>b.sourceLength-a.sourceLength).slice(0,5);
+      await fs.writeFile(path.join(destination,`update-worker-${path.basename(testRoot).split(' with ')[0]}.json`),JSON.stringify({
+        error:error.message,main,probe,workspace,closedResult,stdout,stderr,messages,longestPayloadPaths:longest
+      },null,2));
+    }catch(diagnosticError){console.error(`Could not preserve worker diagnostics: ${diagnosticError.message}`);}
+    throw error;
   } finally {
     if(!closedResult){if(child.connected)child.disconnect();child.kill();await Promise.race([closed,delay(5000,undefined,{ref:false})]);}
     assert(closedResult,'Test worker could not be stopped.');
@@ -185,7 +199,9 @@ try {
   assert.equal(await fileHash(path.join(root,'dist/win-unpacked/resources/update/install-update.ps1')),await fileHash(path.join(root,'desktop/install-update.ps1')));
   for(const {kind,lifecycle} of ['portable','nsis'].flatMap(kind=>[{kind,lifecycle:true},{kind,lifecycle:false}])) {
     const scenario=lifecycle?'packaged-ipc-lifetime':'old-file-compatibility';
-    testRoot=path.join(temporary,kind+'-'+scenario+" with Ü spaces & apostrophe's");await fs.mkdir(testRoot);
+    // Keep the fixture below the portable extractor's Windows path limit while
+    // still exercising Unicode, spaces, ampersands and apostrophes in paths.
+    testRoot=path.join(temporary,kind+'-'+(lifecycle?'ipc':'compat')+" with Ü & apostrophe's");await fs.mkdir(testRoot);
     const data=path.join(testRoot,'user-data');await fs.mkdir(data);
     const cache=path.join(lifecycle?data:testRoot,lifecycle?'updates':'cache');await fs.mkdir(cache);
     const runtimeTemp=path.join(testRoot,'runtime-temp');await fs.mkdir(runtimeTemp);
