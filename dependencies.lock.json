@@ -5,10 +5,11 @@
   },
   "launcherCommit": "c6f82298b167ef2076bb59dc621f13dc5bd8d390",
   "gameServerCommit": "10c659028ad9d6816f78226483f11a884bf81f57",
-  "gameServerBuildCommit": "34fc7da81d80a408915dc2e6bdeb7ee7469ead13",
-  "gameServerArchive": "https://nightly.link/UniverseMan12/Nova_launcher_4.2/actions/artifacts/13336265435.zip",
-  "gameServerArchiveSha256": "a93c29893c66ba915274d7444a01176d34f234036446905e2c4a7a65f2f5e484",
+  "gameServerBuildCommit": "ccabd36cb7dc0e29ad20b8b032c5e3f64261f53e",
+  "gameServerArchive": "https://nightly.link/UniverseMan12/Nova_launcher_4.2/actions/artifacts/13337861948.zip",
+  "gameServerArchiveSha256": "911bc1b04b8bda12e16b227191980ecef81be7cbfddc49056be0ab3fbebc906f",
   "previousGameServerSha256s": [
+    "db51cd7e26167b9fed18be4df6dd14f8196618fd0fb2bbadb2f71bec3aafd68c",
     "ca162057aee3e2efa150ba0dc2be7b107d2dfc12d736737d620de439d250455b",
     "0bbb38e22a0af887d728fc13be527ebe85d2b3d9ab774e472180793aaac88158",
     "ea242ca57d74ebb0d39cbabba71ef5ba58787b828da39455904fc57afe70cef2",
@@ -32,6 +33,6 @@
     "sinum.dll": "fb69e9ee715f5cbbdadd0e8e3cb07ee37b9dc1ac41f8ea04ebee66e4f7026f72",
     "console.dll": "a4873bd206a1bbf05eea868d28f4850942fed8eb55a465ecc05604c5bc9c43c7",
     "memory.dll": "09678b68e73eeb4463e3b442e0982eba7ff08b07df0614b12a02ed4c9f17fb7a",
-    "reboot.dll": "db51cd7e26167b9fed18be4df6dd14f8196618fd0fb2bbadb2f71bec3aafd68c"
+    "reboot.dll": "437e18865be37df6a590f757b846b80a75ea3f8badd7d2720348a84f0d708c0c"
   }
 }

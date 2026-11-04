@@ -4,7 +4,7 @@ import {isNewer, versionParts} from './updates.mjs';
 
 export const changes = Object.freeze([
   {title:'Auto-Sprint is now clearly a beta', text:'Off by default, with a warning before every enable. Existing unconfirmed settings return to off. Movement glitches are still being investigated.'},
-  {title:'Thanos reset corrections', text:'Respawns use an upright pose and restore compatible normal body parts. Repeated transformations still need an in-game check.'},
+  {title:'Thanos and respawn fixes', text:'Upright resets restore compatible body parts; respawn-mode kills count once. Repeated transformations and multiplayer scoring still need an in-game check.'},
   {title:'Your outfit, in the match', text:'Selected outfits and equipment carry into the match. Black Knight and Cloud Strike passed the local check; multiplayer still needs testing.'},
   {title:'Separate Fortnite 4.2 settings', text:'The host and player keep their own settings. Game crashes are reported instead of showing a normal end to the session. The HUD Apply crash still needs testing.'},
   {title:'Updates checked again before installing', text:'Downloaded updates are checked against the current GitHub release. Withdrawn or changed packages are rejected, and saved launcher settings are protected during writes.'},
