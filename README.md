@@ -223,7 +223,7 @@ First-time setup needs internet and may take a few minutes. Pinned components ar
 
 If the host shows **Joinable: true**, you can also press **F8** in Fortnite and enter **open 127.0.0.1:7777**. This connects to the existing host; it cannot start a missing server. If Medal also uses F8, its clip notification may appear.
 
-Detailed output is saved in logs/ instead of filling the launcher. Game-log paths are recorded in the helper logs. Stable 0.4.2 uses the shared %LOCALAPPDATA%\FortniteGame\Saved directory. The 0.4.4 candidate prepares separate `game-data/4.2/client` and `game-data/4.2/server` directories beside the persistent launcher profile and passes them through `-UserDir`. It migrates only compatible display preferences and leaves the shared directory unchanged. File preparation is code-tested; the game's use of these directories and the HUD Scale / Apply crash still require live validation.
+Detailed output is saved in logs/ instead of filling the launcher. Game-log paths are recorded in the helper logs. Fortnite 4.2 uses the shared `%LOCALAPPDATA%\FortniteGame\Saved` directory; the attempted `-UserDir` isolation was removed after the owner test showed it was ignored. Before launch, the launcher backs up and repairs a mismatched borderless startup resolution in the actual settings file, as in stable 0.4.2. It asks you to close other Fortnite windows if that repair is needed. Shared logs are accepted only when their command line matches the current launch. The HUD Scale / Apply crash remains unresolved.
 
 ## Developer commands
 

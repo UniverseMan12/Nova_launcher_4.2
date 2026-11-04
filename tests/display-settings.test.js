@@ -20,21 +20,21 @@ test('legacy display repair preserves other settings, backs up exact bytes and i
 $ErrorActionPreference='Stop'
 Add-Type -Path $Source
 $file=Join-Path $Root 'GameUserSettings.ini'
-$backup=[LegacyDisplay]::Repair($file,1920,1080)
+$backup=[LegacyDisplay]::Repair($file,1920,1080,$true)
 if (-not $backup) { throw 'No backup returned' }
-if ([LegacyDisplay]::Repair($file,1920,1080)) { throw 'Repeated repair changed the file' }
-if ([LegacyDisplay]::Repair((Join-Path $Root 'windowed.ini'),1920,1080)) { throw 'Windowed settings changed' }
-$null=[LegacyDisplay]::Repair((Join-Path $Root 'implicit.ini'),1920,1080)
-if ([LegacyDisplay]::Repair((Join-Path $Root 'missing.ini'),1920,1080)) { throw 'Missing settings created' }
+if ([LegacyDisplay]::Repair($file,1920,1080,$true)) { throw 'Repeated repair changed the file' }
+if ([LegacyDisplay]::Repair((Join-Path $Root 'windowed.ini'),1920,1080,$true)) { throw 'Windowed settings changed' }
+$null=[LegacyDisplay]::Repair((Join-Path $Root 'implicit.ini'),1920,1080,$true)
+if ([LegacyDisplay]::Repair((Join-Path $Root 'missing.ini'),1920,1080,$true)) { throw 'Missing settings created' }
 $rejected=$false
 try { [LegacyDisplay]::Repair($file,0,0) } catch { $rejected=$true }
 if (-not $rejected) { throw 'Invalid dimensions accepted' }
-$null=[LegacyDisplay]::Repair((Join-Path $Root 'unicode.ini'),1920,1080)
+$null=[LegacyDisplay]::Repair((Join-Path $Root 'unicode.ini'),1920,1080,$true)
 $readonly=Join-Path $Root 'readonly.ini'
 [IO.File]::SetAttributes($readonly,[IO.FileAttributes]::ReadOnly)
 try {
   $rejected=$false
-  try { [LegacyDisplay]::Repair($readonly,1920,1080) } catch { $rejected=$true }
+  try { [LegacyDisplay]::Repair($readonly,1920,1080,$true) } catch { $rejected=$true }
   if (-not $rejected) { throw 'Read-only settings replaced' }
 } finally { [IO.File]::SetAttributes($readonly,[IO.FileAttributes]::Normal) }
 Write-Output $backup

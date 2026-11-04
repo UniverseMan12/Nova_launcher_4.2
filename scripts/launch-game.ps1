@@ -32,15 +32,12 @@ try {
     if ($Mode -eq 'server' -and (Get-NetUDPEndpoint -LocalPort 7777 -ErrorAction SilentlyContinue)) { throw 'UDP port 7777 is already in use.' }
     Add-Type -Path (Join-Path $projectRoot 'src\NativeProcess.cs')
     Add-Type -Path (Join-Path $projectRoot 'src\LegacyDisplay.cs')
-    Add-Type -Path (Join-Path $projectRoot 'src\LegacyGameData.cs')
     $desktopSize = [LegacyDisplay]::DesktopSize()
-    $oldSettingsFile = Join-Path $env:LOCALAPPDATA 'FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini'
-    $gameDataRoot = Join-Path $projectRoot 'data\game-data'
-    if ($env:LAUNCHER_PROFILE_DIR) { $gameDataRoot = Join-Path (Split-Path $env:LAUNCHER_PROFILE_DIR -Parent) 'game-data' }
-    $gameUserDirectory = [LegacyGameData]::Prepare($gameDataRoot, $Mode, $oldSettingsFile)
-    $gameSavedDirectory = Join-Path $gameUserDirectory 'Saved'
+    # CL-4072250 still reads the shared Saved directory when passed -UserDir.
+    # Repair the file it actually uses, with the original backup/process guard.
+    $gameSavedDirectory = Join-Path $env:LOCALAPPDATA 'FortniteGame\Saved'
     $settingsFile = Join-Path $gameSavedDirectory 'Config\WindowsClient\GameUserSettings.ini'
-    $settingsBackup = [LegacyDisplay]::Repair($settingsFile, $desktopSize[0], $desktopSize[1], $true)
+    $settingsBackup = [LegacyDisplay]::Repair($settingsFile, $desktopSize[0], $desktopSize[1])
     if ($settingsBackup) { Write-Output "[$Mode] Startup resolution adjusted for Fortnite 4.2. Original settings: $settingsBackup" }
     $session = New-Object LocalGameSession
     # Work around legacy Unreal/OpenSSL initialization issues on newer Intel CPUs.
@@ -61,9 +58,6 @@ try {
     $playerName = $config.username
     if ($Mode -eq 'server') { $playerName = 'LocalHost' }
     $arguments = '-epicapp=Fortnite -epicenv=Prod -epiclocale=en-us -epicportal -skippatchcheck -nobe -AUTH_TYPE=epic -AUTH_LOGIN=' + $playerName + '@local.invalid -AUTH_PASSWORD=LocalOnly -log -forcelogflush -ABSLOG="' + $log + '"'
-    # UserDir is present in CL-4072250. Each role keeps independent persistent
-    # settings/logs; the client uses its saved display mode and resolution.
-    $arguments += ' -UserDir="' + $gameUserDirectory + '"'
     if ($Mode -eq 'server') { $arguments += ' -nosplash -nosound -nullrhi -windowed -port=7777' }
     $gameId = $session.Start($exe, $arguments, $false, $working, ($Mode -eq 'server'))
     Write-Output "[$Mode] Fortnite started (PID $gameId). Connecting to the local backend..."
@@ -78,8 +72,6 @@ try {
     $carry = ''
     while ((Get-Date) -lt $deadline) {
         if ($Mode -eq 'server') { $session.HideServerViewport($gameId) }
-        $game.Refresh()
-        if ($game.HasExited) { throw "Fortnite exited before login completed. Log: $log" }
         # Some Shipping builds ignore ABSLOG. Identify their default log by this
         # instance's unique command-line marker, never by a stale login message.
         if ($null -eq $logReader) {
@@ -87,7 +79,7 @@ try {
                 $defaultLogs = Join-Path $gameSavedDirectory 'Logs'
                 foreach ($candidate in @(Get-ChildItem -LiteralPath $defaultLogs -Filter '*.log' -ErrorAction SilentlyContinue)) {
                     $header = Get-Content -LiteralPath $candidate.FullName -TotalCount 160 -ErrorAction SilentlyContinue
-                    if ($header | Select-String -SimpleMatch $log) { $actualLog = $candidate.FullName; break }
+                    if ($header | Select-String -SimpleMatch ('-ABSLOG="' + $log + '"')) { $actualLog = $candidate.FullName; break }
                 }
             }
             if (Test-Path -LiteralPath $actualLog) {
@@ -96,11 +88,15 @@ try {
                 Write-Output "[$Mode] Game log: $actualLog"
             }
         }
+        # Discover the actual log even when a short-lived game has already
+        # exited, so the error never points only to an ignored ABSLOG path.
+        $game.Refresh()
+        if ($game.HasExited) { throw "Fortnite exited before login completed (exit code $($game.ExitCode)). Log: $actualLog" }
         if ($null -ne $logReader) {
             $tail = $carry + $logReader.ReadToEnd()
             $carry = $tail.Substring([Math]::Max(0, $tail.Length - 512))
+            if ($tail -match 'Unable to login to Fortnite servers|Fatal error[!:]|Critical error') { throw "Login or game startup failed. Log: $actualLog" }
             if ($tail -match '\[UOnlineAccountCommon::ContinueLoggingIn\][^\r\n]*\(Completed\)') { $loggedIn = $true; break }
-            if ($tail -match 'Unable to login to Fortnite servers|Fatal error!|Critical error') { throw "Login or game startup failed. Log: $actualLog" }
         }
         Start-Sleep -Milliseconds 400
     }
