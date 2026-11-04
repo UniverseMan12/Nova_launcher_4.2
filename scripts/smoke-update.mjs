@@ -16,11 +16,21 @@ const root=process.cwd(),version=JSON.parse(await fs.readFile('package.json')).v
 const originalTemp=await fs.realpath(os.tmpdir());
 const temporary=await fs.mkdtemp(path.join(originalTemp,'nova-update-'));
 const execute=promisify(execFile);
-const ps=(script,env={},timeout=15000)=>execute('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout,env:{...process.env,...env}});
+// CIM paths include the fixture's Ü. Match Node's decoding rather than using
+// Windows PowerShell's machine-dependent console code page for JSON output.
+const ps=(script,env={},timeout=15000)=>execute('powershell.exe',['-NoProfile','-NonInteractive','-Command',"[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false);"+script],{windowsHide:true,timeout,encoding:'utf8',env:{...process.env,...env}});
 const exists=file=>fs.access(file).then(()=>true).catch(()=>false);
 async function until(check,message,timeout=90000){const end=Date.now()+timeout;while(Date.now()<end){if(await check())return;await delay(250);}throw new Error(message);}
 async function port(){const server=net.createServer();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
 function inside(directory,file) {const relative=path.relative(directory,path.resolve(file));return relative!==''&&relative!=='..'&&!relative.startsWith('..'+path.sep)&&!path.isAbsolute(relative);}
+async function requireOwnedPath(actual,expected,exact=false) {
+  let resolvedActual,resolvedExpected;
+  try {[resolvedActual,resolvedExpected]=await Promise.all([fs.realpath(actual),fs.realpath(expected)]);}
+  catch(error){throw new Error(`Cannot resolve test runtime ownership: actual=${JSON.stringify(actual)}, expected=${JSON.stringify(expected)}`,{cause:error});}
+  assert(exact?resolvedActual.toLowerCase()===resolvedExpected.toLowerCase():inside(resolvedExpected,resolvedActual),
+    `Test runtime is outside its owned location: actual=${JSON.stringify(actual)}, canonical actual=${JSON.stringify(resolvedActual)}, expected=${JSON.stringify(expected)}, canonical expected=${JSON.stringify(resolvedExpected)}`);
+  return resolvedActual;
+}
 async function runtimeMain(target,kind) {
   const {stdout}=await ps(`
 $all=@(Get-CimInstance Win32_Process)
@@ -37,23 +47,36 @@ ConvertTo-Json -InputObject $result -Compress
   return matches[0];
 }
 async function stopOwned(directory) {
-  assert(inside(temporary,directory),'Cleanup escaped the update test root.');
-  // Catch the portable main even if its wrapper already exited. Installer
-  // helpers are identified by their request path in this unique test root.
+  const ownedRoot=await requireOwnedPath(directory,temporary);
+  // Canonical paths handle NSIS 8.3 aliases, including orphaned main processes.
+  // A PowerShell helper must have both script and request files in this root;
+  // a matching substring somewhere in its command line is insufficient.
+  const canonical=file=>file?fs.realpath(file).catch(()=>null):Promise.resolve(null);
+  const argument=(line,name)=>new RegExp(`(?:^|\\s)-${name}\\s+(?:"([^"]+)"|(\\S+))`,'i').exec(line||'')?.slice(1).find(Boolean);
   await until(async()=>{
     const {stdout}=await ps(`
-$prefix=[IO.Path]::GetFullPath($env:NOVA_TEST_ROOT).TrimEnd('\\')+'\\'
-$owned=@(Get-CimInstance Win32_Process | Where-Object {
-  ($_.ExecutablePath -and $_.ExecutablePath.StartsWith($prefix,[StringComparison]::OrdinalIgnoreCase)) -or
-  ($_.Name -eq 'powershell.exe' -and $_.CommandLine -and $_.CommandLine.IndexOf($prefix,[StringComparison]::OrdinalIgnoreCase) -ge 0)
+$items=@(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath } | ForEach-Object {
+  [pscustomobject]@{id=[int]$_.ProcessId;name=$_.Name;exe=$_.ExecutablePath;command=$_.CommandLine;created=$_.CreationDate.ToUniversalTime().ToString('o')}
 })
+ConvertTo-Json -InputObject $items -Compress
+`);
+    const matches=await Promise.all(JSON.parse(stdout.trim()).map(async item=>{
+      const executable=await canonical(item.exe);
+      if(executable&&inside(ownedRoot,executable))return {...item,helper:false};
+      if(item.name.toLowerCase()!=='powershell.exe')return null;
+      const [script,request]=await Promise.all([canonical(argument(item.command,'File')),canonical(argument(item.command,'RequestFile'))]);
+      return script&&request&&inside(ownedRoot,script)&&inside(ownedRoot,request)&&path.dirname(script)===path.dirname(request)?{...item,helper:true}:null;
+    }));
+    const owned=matches.filter(Boolean).sort((a,b)=>Number(b.helper)-Number(a.helper));
+    if(!owned.length)return true;
+    await ps(`
 # Stop an update helper first so it cannot restart the launcher during cleanup.
-foreach($item in ($owned | Sort-Object @{Expression={if($_.Name -eq 'powershell.exe'){0}else{1}}})) {
-  $current=Get-CimInstance Win32_Process -Filter ('ProcessId='+$item.ProcessId)
-  if($current -and $current.CreationDate -eq $item.CreationDate){Stop-Process -Id $item.ProcessId -Force -ErrorAction SilentlyContinue}
+foreach($item in ($env:NOVA_TEST_OWNED | ConvertFrom-Json)) {
+  $current=Get-CimInstance Win32_Process -Filter ('ProcessId='+[int]$item.id)
+  if($current -and $current.CreationDate.ToUniversalTime().ToString('o') -eq $item.created){Stop-Process -Id $item.id -Force -ErrorAction SilentlyContinue}
 }
-$owned.Count
-`,{NOVA_TEST_ROOT:directory});return Number(stdout.trim())===0;
+`,{NOVA_TEST_OWNED:JSON.stringify(owned.map(({id,created})=>({id,created})))});
+    return false;
   },'Test-owned update processes did not stop.',15000);
 }
 async function verifyWorker(main,testRoot,env) {
@@ -77,7 +100,8 @@ async function verifyWorker(main,testRoot,env) {
     if(spawnError)throw spawnError;if(sendError)throw sendError;
     assert.equal(result.code,0,`Updated runtime worker exited ${result.code}: ${stderr}`);
     const prepared=messages.find(message=>message.type==='workspace');
-    assert(prepared&&inside(workspace,prepared.root),'Updated worker did not prepare its own verified payload.');
+    assert(prepared,'Updated worker did not prepare its own verified payload.');
+    await requireOwnedPath(prepared.root,workspace);
     const failures=messages.filter(message=>message.type==='failure');
     assert.equal(failures.length,1,`Expected one missing-game validation failure; received ${JSON.stringify(messages)}. ${stderr}`);
     assert.match(failures[0].message,/missing FortniteGame/);
@@ -147,7 +171,9 @@ try {
     const result=JSON.parse(await fs.readFile(resultFile));assert.equal(result.success,true,result.message);
     let main;
     await until(async()=>Boolean(main=await runtimeMain(target,kind)),'Updated Electron main did not restart.');
-    assert(kind==='portable'?inside(runtimeTemp,main.exe):path.resolve(main.exe).toLowerCase()===path.resolve(target).toLowerCase(),'Updated main is outside its expected test runtime.');
+    const reportedExecutable=main.exe,expectedLocation=kind==='portable'?runtimeTemp:target;
+    main.exe=await requireOwnedPath(reportedExecutable,expectedLocation,kind!=='portable');
+    console.log(`Updated ${kind} runtime: reported=${JSON.stringify(reportedExecutable)}, canonical=${JSON.stringify(main.exe)}, expected=${JSON.stringify(expectedLocation)}`);
     const {stdout:runtimeVersion}=await ps('[Diagnostics.FileVersionInfo]::GetVersionInfo($env:NOVA_TEST_TARGET).ProductVersion',{NOVA_TEST_TARGET:main.exe});
     assert([version,version+'.0'].includes(runtimeVersion.trim()),`Unexpected running Electron version: ${runtimeVersion.trim()}`);
     await verifyWorker(main,testRoot,env);

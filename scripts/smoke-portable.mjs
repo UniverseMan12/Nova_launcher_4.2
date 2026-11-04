@@ -44,6 +44,7 @@ async function extractedRuntime(wrapperPid) {
   // TEMP. Identify the actual Electron child instead of guessing from folders.
   assert(Number.isSafeInteger(wrapperPid)&&wrapperPid>0);
   const {stdout}=await promisify(execFile)('powershell.exe',['-NoProfile','-NonInteractive','-Command',`
+[Console]::OutputEncoding=[Text.UTF8Encoding]::new($false)
 $matches=@(Get-CimInstance Win32_Process | Where-Object {
   $_.ParentProcessId -eq [int]$env:NOVA_TEST_WRAPPER -and $_.Name -eq 'NOVA DROP.exe' -and $_.CommandLine -notmatch '(?:^|\\s)--type(?:=|\\s)'
 } | Select-Object -ExpandProperty ExecutablePath)
