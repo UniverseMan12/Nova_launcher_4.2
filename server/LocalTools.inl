@@ -7,6 +7,7 @@
 #include "FortPickup.h"
 #include "GameModeBase.h"
 #include "KismetStringLibrary.h"
+#include "LauncherCharacterParts.h"
 #include <chrono>
 
 namespace LocalTools {
@@ -225,10 +226,15 @@ namespace LocalTools {
             Report("Waiting for your original outfit to load. Please try again."); return false;
         }
         if (!ClearPlayerItems(controller, clear)) { Report("Inventory removal failed. Try again once the player is ready."); return false; }
-        if (OriginalAppearance.appearance.saved) RestoreAppearance(controller, OriginalAppearance, false);
+        // Native gadget removal may replace the pawn. Keep that intermediate
+        // pawn too, otherwise a successful reset can leave an unpossessed body.
+        const TrackedObject unequippedPawnRef(controller->GetMyFortPawn());
+        if (OriginalAppearance.appearance.saved && !RestoreAppearance(controller, OriginalAppearance, false)) {
+            Report("The original appearance is unavailable after unequipping. Rejoin before resetting."); return false;
+        }
         FTransform transform{};
         transform.Translation = location;
-        transform.Rotation = controller->GetControlRotation().Quaternion();
+        transform.Rotation = LauncherAppearanceRules::Upright(controller->GetControlRotation()).Quaternion();
         transform.Scale3D = FVector(1, 1, 1);
         struct { AController* Player; FTransform Transform; APawn* Result; } params{ controller, transform, nullptr };
         mode->ProcessEvent(spawn, &params);
@@ -238,7 +244,7 @@ namespace LocalTools {
         state->ClearDeathInfo();
         pawn->SetOwner(controller);
         controller->Possess(pawn);
-        if (OriginalAppearance.appearance.saved) RestoreAppearance(controller, OriginalAppearance, true);
+        const bool appearanceRestored = !OriginalAppearance.appearance.saved || RestoreAppearance(controller, OriginalAppearance, true);
         controller->ApplyCosmeticLoadout();
         pawn->SetMaxHealth(100); pawn->SetHealth(100);
         pawn->SetMaxShield(100); bool shieldRestored = RestoreShield(pawn);
@@ -250,7 +256,13 @@ namespace LocalTools {
         pawn->ForceNetUpdate();
         oldPawn = Cast<AFortPawn>(oldPawnRef.Get());
         if (oldPawn && oldPawn != pawn && oldPawn->IsValidLowLevel() && !oldPawn->IsActorBeingDestroyed()) oldPawn->K2_DestroyActor();
+        auto unequippedPawn = Cast<AFortPawn>(unequippedPawnRef.Get());
+        if (unequippedPawn && unequippedPawn != pawn && !unequippedPawn->IsActorBeingDestroyed()) unequippedPawn->K2_DestroyActor();
         DeadController = {}; HasDeathLocation = false;
+        const auto rotation = pawn->GetActorRotation();
+        LauncherGameplayLog("local reset: pitch=" + std::to_string(rotation.Pitch) + " roll=" + std::to_string(rotation.Roll) +
+            " appearance=" + (appearanceRestored ? "restored" : "failed"));
+        if (!appearanceRestored) { Report("Respawned, but restoring the normal animation failed. Rejoin before using Thanos again."); return false; }
         Report(shieldRestored ? "Respawned with 100 health and shield." : "Respawned. Shield restoration is unavailable in this build.");
         return true;
     }
@@ -291,12 +303,12 @@ namespace LocalTools {
             EquipPickaxe(controller);
             Report("Inventory cleared. Pickaxe and building tools kept; automatic refills disabled.");
         } else if (action == SaveSpot) {
-            SavedLocation = pawn->GetActorLocation(); SavedRotation = controller->GetControlRotation();
+            SavedLocation = pawn->GetActorLocation(); SavedRotation = LauncherAppearanceRules::Upright(controller->GetControlRotation());
             HasSavedSpot.store(true); Report("Spot saved. Return here or use it as your respawn point.");
         } else if (action == ReturnSpot) {
             if (!HasSavedSpot.load()) { Report("Click Save my spot first."); return; }
             auto destination = SavedLocation; destination.Z += 100;
-            Report(pawn->TeleportTo(destination, SavedRotation) ? "Returned to your saved spot." : "The saved spot is blocked. Move the obstacle or save a new spot.");
+            Report(pawn->TeleportTo(destination, LauncherAppearanceRules::Upright(SavedRotation)) ? "Returned to your saved spot." : "The saved spot is blocked. Move the obstacle or save a new spot.");
         } else if (action == ClearLoot) {
             int removed = 0;
             for (const auto& ref : SpawnedLoot) {

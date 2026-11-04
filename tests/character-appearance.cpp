@@ -1,8 +1,22 @@
 #include "CharacterAppearanceRules.h"
 #include <cassert>
+#include <limits>
+#include <initializer_list>
 
 int main() {
     using namespace LauncherAppearanceRules;
+    // A camera looking steeply up/down, or with roll, must not tilt the new
+    // player's capsule. Exercise actual shared production rotation policy.
+    struct Rotation { float Pitch, Yaw, Roll; };
+    for (float pitch : {-89.f, -35.f, 0.f, 35.f, 89.f}) for (float roll : {-90.f, 0.f, 90.f}) {
+        const auto rotation = Upright(Rotation{pitch, 135.f, roll});
+        assert(rotation.Pitch == 0 && rotation.Roll == 0 && rotation.Yaw == 135.f);
+    }
+    assert(Upright(Rotation{30.f, 495.f, 5.f}).Yaw == 135.f);
+    assert(Upright(Rotation{30.f, std::numeric_limits<float>::quiet_NaN(), 5.f}).Yaw == 0.f);
+    assert(Upright(Rotation{30.f, std::numeric_limits<float>::infinity(), 5.f}).Yaw == 0.f);
+    assert(IsSkeletonSelector(1,2) && IsSkeletonSelector(2,4));
+    assert(!IsSkeletonSelector(3,2) && !IsSkeletonSelector(1,7));
     // Default female body must not retain the male player-state default.
     assert(ChooseGender(2, 1) == 2);
     // Black Knight must not inherit the female fallback's skeleton.

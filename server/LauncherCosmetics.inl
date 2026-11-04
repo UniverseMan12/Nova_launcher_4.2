@@ -6,35 +6,7 @@ static bool LauncherCollectOutfit42(UObject* character, UObject* backpack, TArra
     if (!character || !character->IsValidLowLevel()) return false;
     const int heroOffset = character->GetOffset("HeroDefinition", false);
     auto hero = heroOffset >= 0 ? character->Get<UObject*>(heroOffset) : nullptr;
-    if (!hero || !hero->IsValidLowLevel()) return false;
-    const int specializationsOffset = hero->GetOffset("Specializations", false);
-    if (specializationsOffset < 0) return false;
-    auto& specializations = hero->Get<TArray<TSoftObjectPtr<UObject>>>(specializationsOffset);
-    if (specializations.Num() < 1 || specializations.Num() > 32) return false;
-    auto specializationClass = FindObject<UClass>(L"/Script/FortniteGame.FortHeroSpecialization");
-    auto partClass = FindObject<UClass>(L"/Script/FortniteGame.CustomCharacterPart");
-    if (!specializationClass || !partClass) return false;
-    for (int i = 0; i < specializations.Num(); ++i) {
-        auto specialization = specializations.at(i, GetSoftObjectSize()).Get(specializationClass, true);
-        if (!specialization || !specialization->IsValidLowLevel()) return false;
-        const int offset = specialization->GetOffset("CharacterParts", false);
-        if (offset < 0) return false;
-        auto& source = specialization->Get<TArray<TSoftObjectPtr<UObject>>>(offset);
-        if (source.Num() > 32) return false;
-        for (int z = 0; z < source.Num(); ++z) {
-            auto part = source.at(z, GetSoftObjectSize()).Get(partClass, true);
-            if (!part) return false;
-            parts.Add(part);
-        }
-    }
-    if (backpack && backpack->IsValidLowLevel()) {
-        const int offset = backpack->GetOffset("CharacterParts", false);
-        if (offset < 0) return false;
-        auto& source = backpack->Get<TArray<UObject*>>(offset);
-        if (source.Num() > 6) return false;
-        for (int i = 0; i < source.Num(); ++i) if (auto part = source.at(i)) parts.Add(part);
-    }
-    return parts.Num() >= 2;
+    return LauncherCollectHeroParts42(hero, backpack, parts);
 }
 
 static void LauncherRefreshPickaxe42(AFortPlayerController* controller, FFortAthenaLoadout* loadout) {

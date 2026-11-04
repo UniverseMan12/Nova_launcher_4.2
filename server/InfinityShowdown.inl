@@ -79,20 +79,29 @@ namespace InfinityShowdown {
         }
         return saved;
     }
-    static void RemoveInventory(AFortInventory* inventory) {
+    static bool RemoveInventory(AFortInventory* inventory) {
         // Unequipping this gadget can add a pickaxe. Remove it before taking the
         // snapshot below so that the automatically added item is cleared too.
         if (auto gadget = inventory->FindItemInstance(Gauntlet())) {
             auto entry = gadget->GetItemEntry();
             const auto guid = entry->GetItemGuid(); const int count = entry->GetCount();
-            inventory->RemoveItem(guid, nullptr, count, true);
+            // Force removal must also bypass final-stack persistence. A zero-
+            // count Carmine item still carries its gadget/animation state.
+            if (!inventory->RemoveItem(guid, nullptr, count, true, true) || inventory->FindItemInstance(guid)) {
+                inventory->Update(); return false;
+            }
         }
         std::vector<std::pair<FGuid,int>> remove;
         auto& items = inventory->GetItemList().GetItemInstances();
         for (int i = 0; i < items.Num(); ++i) if (auto item = items.at(i))
             remove.push_back({item->GetItemEntry()->GetItemGuid(), item->GetItemEntry()->GetCount()});
-        for (const auto& item : remove) inventory->RemoveItem(item.first, nullptr, item.second, true);
+        for (const auto& item : remove) {
+            if (!inventory->RemoveItem(item.first, nullptr, item.second, true, true) || inventory->FindItemInstance(item.first)) {
+                inventory->Update(); return false;
+            }
+        }
         inventory->Update();
+        return true;
     }
     static bool RestoreEquipment(AFortPlayerControllerAthena* controller, Player& player) {
         if (!player.restore) return true;
@@ -104,7 +113,7 @@ namespace InfinityShowdown {
             if (!def) { Report("Waiting for an equipment asset to reload. The saved inventory is retained."); return false; }
             definitions.push_back(def);
         }
-        RemoveInventory(inventory);
+        if (!RemoveInventory(inventory)) { Report("Waiting for the transformed inventory to clear. Saved equipment is retained."); return false; }
         for (size_t i = 0; i < player.equipment.size(); ++i) {
             const auto& item = player.equipment[i];
             inventory->AddItem(definitions[i], nullptr, item.count, item.ammo);
@@ -151,7 +160,7 @@ namespace InfinityShowdown {
         if (player.appearance.saved) return true;
         auto state = controller->GetPlayerState(); auto pawn = controller->GetMyFortPawn();
         int parts, gender, body;
-        if (!pawn || !AppearanceOffsets(state, parts, gender, body)) return false;
+        if (!pawn || !AppearanceOffsets(state, parts, gender, body) || LauncherIsGauntletAppearance42(state, pawn)) return false;
         const int animation = pawn->GetOffset("AnimBPOverride", false);
         if (animation < 0) return false;
         auto source = state->GetPtr<UObject*>(parts);
@@ -162,6 +171,7 @@ namespace InfinityShowdown {
             saved.parts[i] = Ref(source[i]);
         }
         saved.gender = state->Get<uint8_t>(gender); saved.body = state->Get<uint8_t>(body);
+        if (!LauncherValidAppearance42(source, saved.gender, saved.body)) return false;
         saved.animation = Ref(pawn->Get<UObject*>(animation)); saved.saved = true;
         player.appearance = saved;
         LOG_INFO(LogDev, "Infinity Showdown: saved original appearance (gender {}, body {}).", int(saved.gender), int(saved.body));
@@ -414,13 +424,14 @@ namespace InfinityShowdown {
         auto old = Ref(controller->GetMyFortPawn());
         // Remove Thanos abilities before spawning a normal pawn; never drop the gauntlet.
         if (!RestoreEquipment(controller, player)) return false;
+        const Ref unequippedPawn(controller->GetMyFortPawn());
         if (!RestoreAppearance(controller, player, false)) return false;
         auto location = ArenaCenter(mode, player.location);
         std::uniform_real_distribution<float> angle(0.f, 6.2831853f);
         float direction = angle(Random); location.X += std::cos(direction)*1200; location.Y += std::sin(direction)*1200;
         if (!GroundAt(location)) return false;
         location.Z += InfinityRules::RespawnHeight;
-        FTransform transform{}; transform.Translation = location; transform.Rotation = controller->GetControlRotation().Quaternion(); transform.Scale3D = FVector(1,1,1);
+        FTransform transform{}; transform.Translation = location; transform.Rotation = LauncherAppearanceRules::Upright(controller->GetControlRotation()).Quaternion(); transform.Scale3D = FVector(1,1,1);
         struct { AController* controller; FTransform transform; APawn* result; } params{controller,transform,nullptr};
         mode->ProcessEvent(spawn, &params);
         auto pawn = Cast<AFortPlayerPawn>(params.result); if (!pawn) return false;
@@ -435,6 +446,7 @@ namespace InfinityShowdown {
         pawn->SetCanBeDamaged(false); player.protectedPawn = Ref(pawn); player.protectionUntil = now + 3;
         pawn->ForceNetUpdate();
         if (auto previous = Cast<AActor>(old.Get())) if (previous != pawn && !previous->IsActorBeingDestroyed()) previous->K2_DestroyActor();
+        if (auto previous = Cast<AActor>(unequippedPawn.Get())) if (previous != pawn && !previous->IsActorBeingDestroyed()) previous->K2_DestroyActor();
         player.lives.Spawned();
         Tell(controller, "Respawned above the arena. " + std::to_string(player.lives.remaining) + " respawns remaining."); return true;
     }
@@ -538,7 +550,10 @@ namespace InfinityShowdown {
             Faulted = true; Broadcast("Infinity Showdown: this build cannot apply the Thanos gadget. Stop and select Classic."); return;
         }
         player.equipment = SaveEquipment(inventory); player.restore = true;
-        RemoveInventory(inventory);
+        if (!RemoveInventory(inventory)) {
+            Faulted = true; RestoreEquipment(controller, player);
+            Broadcast("Infinity Showdown: inventory cleanup failed before transformation. Restart this session."); return;
+        }
         Assigning = controller; AssigningDefinition = gauntlet; AssignmentSucceeded = false;
         inventory->AddItem(gauntlet,nullptr,1); inventory->Update(); Assigning = nullptr; AssigningDefinition = nullptr;
         if (!AssignmentSucceeded || !inventory->FindItemInstance(gauntlet)) {

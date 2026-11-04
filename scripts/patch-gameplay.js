@@ -89,4 +89,39 @@ void AFortPlayerController::InstallLauncherLoadoutHook(UObject* controller) {
   edit('FortPlayerControllerAthena.cpp', [
     ['\tif (Globals::bNoMCP)\n', '\tif (Fortnite_Version == 4.2) { ControllerAsFort->ApplyCosmeticLoadout(); return; }\n\tif (Globals::bNoMCP)\n']
   ], marker);
+
+  // A reset can receive a delayed acknowledgment for its old pawn. Validate
+  // ownership before dereferencing it or changing the acknowledged pawn.
+  edit('FortPlayerControllerAthena.cpp', [
+    ['void AFortPlayerControllerAthena::ServerAcknowledgePossessionHook(APlayerController* Controller, APawn* Pawn)\n{', `void AFortPlayerControllerAthena::ServerAcknowledgePossessionHook(APlayerController* Controller, APawn* Pawn)
+{
+    if (Fortnite_Version == 4.2) {
+        if (!Controller || !Controller->IsValidLowLevel() || !Pawn || !Pawn->IsValidLowLevel() || Pawn->IsActorBeingDestroyed()) return;
+        auto fort = Cast<AFortPlayerController>(Controller);
+        auto playerPawn = Cast<AFortPlayerPawn>(Pawn);
+        if (!fort || !playerPawn || fort->GetMyFortPawn() != Pawn || Pawn->GetController() != Controller) return;
+        const int acknowledged = Controller->GetOffset("AcknowledgedPawn", false);
+        if (acknowledged < 0) return;
+        Controller->Get<APawn*>(acknowledged) = Pawn;
+        // Spawning/transformation owns health and shield. A delayed ACK must
+        // not reset those values or restore a normal outfit over a gauntlet.
+        fort->ApplyCosmeticLoadout();
+        return;
+    }`],
+    ['\tif (Fortnite_Version == 4.2) { ControllerAsFort->ApplyCosmeticLoadout(); return; }\n', '']
+  ], '// Launcher gameplay fixes v3');
+  edit('FortPlayerControllerAthena.h', [
+    ['#include "FortKismetLibrary.h"', '#include "FortKismetLibrary.h"\n#include "LauncherCharacterParts.h"'],
+    ['\tif (!Pawn || !HeroDefinition || !HeroDefinition->IsValidLowLevel()) return;\n', `\tif (!Pawn || !HeroDefinition || !HeroDefinition->IsValidLowLevel()) return;
+    if (Fortnite_Version == 4.2) {
+        auto controller = Cast<AFortPlayerController>(Pawn->GetController());
+        auto loadout = controller ? controller->GetCosmeticLoadout() : nullptr;
+        TArray<UObject*> parts;
+        if (LauncherCollectHeroParts42(HeroDefinition, loadout ? loadout->GetBackpack() : nullptr, parts))
+            LauncherApplyParts42(Pawn->GetPlayerState(), parts, true);
+        parts.Free();
+        return;
+    }
+`]
+  ], '// Launcher gameplay fixes v3');
 }

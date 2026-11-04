@@ -12,11 +12,11 @@ static AppearanceState OriginalAppearance;
         return parts >= 0 && gender >= 0 && body >= 0 &&
             state->GetOffset("CharacterColorSwatches", false) - parts == 6 * sizeof(UObject*);
     }
-    static bool SaveAppearance(AFortPlayerControllerAthena* controller, AppearanceState& player) {
-        if (player.appearance.saved) return true;
+    static bool SaveAppearance(AFortPlayerControllerAthena* controller, AppearanceState& player, bool refresh = false) {
+        if (player.appearance.saved && !refresh) return true;
         auto state = controller->GetPlayerState(); auto pawn = controller->GetMyFortPawn();
         int parts, gender, body;
-        if (!pawn || !AppearanceOffsets(state, parts, gender, body)) return false;
+        if (!pawn || !AppearanceOffsets(state, parts, gender, body) || LauncherIsGauntletAppearance42(state, pawn)) return false;
         const int animation = pawn->GetOffset("AnimBPOverride", false);
         if (animation < 0) return false;
         auto source = state->GetPtr<UObject*>(parts);
@@ -27,6 +27,7 @@ static AppearanceState OriginalAppearance;
             saved.parts[i] = TrackedObject(source[i]);
         }
         saved.gender = state->Get<uint8_t>(gender); saved.body = state->Get<uint8_t>(body);
+        if (!LauncherValidAppearance42(source, saved.gender, saved.body)) return false;
         saved.animation = TrackedObject(pawn->Get<UObject*>(animation)); saved.saved = true;
         player.appearance = saved;
         LOG_INFO(LogDev, "Local tools: saved original appearance (gender {}, body {}).", int(saved.gender), int(saved.body));
@@ -82,6 +83,8 @@ static AppearanceState OriginalAppearance;
             SessionPlayer = TrackedObject(controller); DeadController = {};
             HasDeathLocation = false; HasSavedSpot.store(false); OriginalAppearance = {};
         }
-        if (refresh) OriginalAppearance.appearance.saved = false;
-        SaveAppearance(static_cast<AFortPlayerControllerAthena*>(controller), OriginalAppearance);
+        // Keep the previous valid snapshot if a new loadout is incomplete or a
+        // repeated gadget equip is still displaying Thanos. Publish only after
+        // all replacement parts, selectors and animation references validate.
+        SaveAppearance(static_cast<AFortPlayerControllerAthena*>(controller), OriginalAppearance, refresh);
     }
