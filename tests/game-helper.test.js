@@ -9,6 +9,13 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 
+function assertSameExistingFile(reported, expected, output) {
+  assert.ok(reported, output);
+  // Get-ChildItem can expand a runner TEMP path's 8.3 alias. Both spellings
+  // must identify the same existing file; an unrelated log must still fail.
+  assert.equal(fs.realpathSync.native(reported).toLowerCase(), fs.realpathSync.native(expected).toLowerCase(), output);
+}
+
 // Exercise the real PowerShell helper, including its exit/finally paths. The
 // native adapter starts a harmless hidden child instead of loading Fortnite.
 const nativeAdapter = String.raw`
@@ -179,17 +186,19 @@ exit $LASTEXITCODE
       }
       assert.equal(result.status, childExit === 0 ? 0 : 1, output);
       const actualLog = fs.readFileSync(marker('actual-log'), 'utf8');
-      assert.ok(result.stdout.includes(`Game log: ${actualLog}`), output);
+      const reportedLog = /^\[(?:client|server)\] Game log: ([^\r\n]+)/m.exec(result.stdout)?.[1];
+      assertSameExistingFile(reportedLog, actualLog, output);
       assert.ok(fs.existsSync(marker('disposed')), 'All owned processes are disposed on either exit path');
       assert.doesNotMatch(output, /Game log: .*?(00-stale|01-sibling|02-modern)\.log/);
       if (scenario === 'global' || scenario === 'early-exit') {
-        assert.equal(actualLog, path.join(fixture, 'local-data/FortniteGame/Saved/Logs/zz-current.log'));
+        assertSameExistingFile(actualLog, path.join(fixture, 'local-data/FortniteGame/Saved/Logs/zz-current.log'), output);
         const requestedLog = /-ABSLOG="([^"]+)"/.exec(fs.readFileSync(marker('started'), 'utf8'))[1];
         assert.ok(!fs.existsSync(requestedLog), 'Shipping fixture deliberately ignores ABSLOG');
       }
       if (scenario === 'early-exit') {
         assert.match(result.stderr, /exited before login completed \(exit code 7\)/);
-        assert.ok(result.stderr.includes(`Log: ${actualLog}`), output);
+        const failureLog = /Log: ([^\r\n]+)/.exec(result.stderr)?.[1];
+        assertSameExistingFile(failureLog, actualLog, output);
         assert.doesNotMatch(result.stdout, /LAUNCHER_READY:|Local login confirmed/);
         assert.equal(fs.readFileSync(marker('loads'), 'utf8').trim(), 'sinum.dll', 'No post-login DLL is loaded after an early crash');
         return;
