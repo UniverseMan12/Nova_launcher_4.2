@@ -2,7 +2,7 @@
 
 # NOVA DROP - Fortnite 4.2 Launcher
 
-<img src="docs/thanos-dancing.gif" width="360" alt="Thanos dancing">
+
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
