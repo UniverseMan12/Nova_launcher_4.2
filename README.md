@@ -6,7 +6,7 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*Launcher preview from the withdrawn 0.4.3 build. The 0.4.4 test candidate retains its larger text, shared Thanos selector and update changelog while addressing the reported gameplay problems. Stable downloads below point to 0.4.2.*
+*Verified 0.4.4 test-build preview, with the shared Thanos selector, clearer settings and update changelog. Gameplay confirmation is still pending. Stable downloads below point to 0.4.2.*
 
 ## Controls and updates in the 0.4.4 test candidate
 
