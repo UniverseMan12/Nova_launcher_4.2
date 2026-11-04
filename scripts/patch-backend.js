@@ -65,6 +65,9 @@ module.exports = function() {
             if (!Buffer.isBuffer(req.body)) return res.status(400).json({error: 'Expected binary client settings.'});
             req.rawBody = req.body.toString('latin1'); next();
         });`);
+  // Cloud metadata describes bytes, not JavaScript UTF-16 string length. This
+  // matters for hotfix files containing localized comments or settings values.
+  source = source.replaceAll('"length": ParsedFile.length,','"length": Buffer.byteLength(ParsedFile),');
   fs.writeFileSync(cloud,source);
   const mcp = path.join(directory, 'structure', 'mcp.js');
   source = fs.readFileSync(mcp, 'utf8');

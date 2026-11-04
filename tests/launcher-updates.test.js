@@ -42,13 +42,51 @@ test('checksum entries must uniquely match the exact executable filename',()=>{
   assert.throws(()=>checksumFor(`${sha256}  ../${name}`,name));
   assert.throws(()=>checksumFor('not a checksum',name));
 });
-test('checking never downloads or installs; cached verified updates remain ready offline',async t=>{
+test('checking never downloads or installs; offline revalidation retains the cache for retry',async t=>{
   let installs=0,downloads=0;const mock=fakeFetch();
   const {updates}=await context(t,{fetchImpl:(url,...args)=>{if(url.endsWith('.exe'))downloads++;return mock(url,...args);},install:async()=>{installs++;}});
   await updates.check();assert.equal(updates.state.phase,'available');assert.equal(downloads,0);assert.equal(installs,0);
   await updates.download();assert.equal(updates.state.phase,'ready');assert.equal(installs,0);
-  updates.fetchImpl=()=>{throw new Error('offline');};await updates.check();assert.equal(updates.state.phase,'ready');
-  await updates.install();assert.equal(installs,1);
+  const file=updates.downloaded;
+  updates.fetchImpl=()=>{throw new Error('offline');};await updates.check();assert.equal(updates.state.phase,'error');
+  assert.equal(await fileHash(file),sha256);
+  await assert.rejects(updates.install(),/Download and verify/);assert.equal(installs,0);
+  updates.fetchImpl=mock;await updates.check();assert.equal(updates.state.phase,'ready');
+  await updates.install();assert.equal(installs,1);assert.equal(downloads,1);
+});
+
+test('a cached update is not installed after its release is withdrawn or changed',async t=>{
+  let installs=0;
+  const {updates}=await context(t,{install:async()=>{installs++;}});
+  await updates.check();await updates.download();const file=updates.downloaded;
+  // A withdrawn latest release can make GitHub return the previous regular tag.
+  updates.fetchImpl=fakeFetch(release('0.4.2'));
+  await assert.rejects(updates.install(),/changed or was withdrawn/);
+  assert.equal(installs,0);assert.equal(updates.state.phase,'error');assert.equal(updates.downloaded,null);
+  assert.equal(await fileHash(file),sha256);
+  await updates.check();assert.equal(updates.state.phase,'current');assert.equal(updates.release,null);
+  // A same-tag replacement with different checksums must also be re-downloaded.
+  updates.fetchImpl=fakeFetch();await updates.check();assert.equal(updates.state.phase,'ready');
+  const mock=fakeFetch();
+  updates.fetchImpl=(url,...args)=>url.endsWith('SHA256SUMS.txt')?new Response(`${'0'.repeat(64)}  ${release().assets[0].name}\n`):mock(url,...args);
+  await assert.rejects(updates.install(),/package changed/);assert.equal(installs,0);
+  assert.equal(await fileHash(file),sha256);
+});
+
+test('install revalidation rejects unpublished releases and recovers after connection failure',async t=>{
+  let installs=0;
+  const {updates}=await context(t,{install:async()=>{installs++;}});
+  await updates.check();await updates.download();const file=updates.downloaded;
+  updates.fetchImpl=async()=>new Response('not found',{status:404});
+  await assert.rejects(updates.install(),/revalidated/);assert.equal(installs,0);
+  assert.equal(await fileHash(file),sha256);
+  updates.fetchImpl=fakeFetch();await updates.check();
+  updates.fetchImpl=fakeFetch({...release(),prerelease:true});
+  await assert.rejects(updates.install(),/regular release/);assert.equal(installs,0);
+  updates.fetchImpl=fakeFetch();await updates.check();
+  updates.fetchImpl=async()=>{throw new Error('offline');};
+  await assert.rejects(updates.install(),/offline/);assert.equal(installs,0);
+  updates.fetchImpl=fakeFetch();await updates.check();await updates.install();assert.equal(installs,1);
 });
 test('restart recovers verified download from cache without a second executable transfer',async t=>{
   const {cache,updates}=await context(t);await updates.check();await updates.download();
@@ -89,6 +127,13 @@ test('concurrent update checks share a single operation and no update means no c
   const {updates}=await context(t,{fetchImpl:()=>{requests++;return response;}});
   const first=updates.check();await updates.check();assert.equal(requests,1);
   releaseResponse(Response.json(release('0.4.2')));await first;assert.equal(updates.state.phase,'current');assert.equal(requests,1);
+});
+
+test('a rollback of the public latest version does not claim a newer installed build is current',async t=>{
+  const {updates}=await context(t,{currentVersion:'0.4.3',fetchImpl:fakeFetch(release('0.4.2'))});
+  await updates.check();assert.equal(updates.state.phase,'current');assert.equal(updates.release,null);
+  assert.match(updates.state.message,/newer than the latest available release \(0\.4\.2\)/);
+  assert.doesNotMatch(updates.state.message,/up to date/);
 });
 test('development and unpacked builds cannot install; portable and NSIS choose matching packages',()=>{
   assert.equal(updateKind({packaged:false,platform:'win32',portableFile:'C:/app.exe'}),null);

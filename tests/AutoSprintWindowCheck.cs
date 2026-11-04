@@ -38,8 +38,8 @@ public static class AutoSprintWindowCheck
                     Message message;
                     bool found = PeekMessage(out message,window,0x100,0x101,1);
                     if (name!="UnrealWindow") { Check(!found,"Ignore unrelated class"); continue; }
-                    Check(found && message.message==0x100 && message.key.ToUInt64()==0x75 && message.data.ToInt64()==0x00400001,"F6 down packet");
-                    Check(PeekMessage(out message,window,0x100,0x101,1) && message.message==0x101 && message.data.ToInt64()==0xc0400001L,"F6 up packet");
+                    Check(found && message.message==0x100 && message.key.ToUInt64()==0x7b && message.data.ToInt64()==0x00580001,"F12 down packet");
+                    Check(PeekMessage(out message,window,0x100,0x101,1) && message.message==0x101 && message.data.ToInt64()==0xc0580001L,"F12 up packet");
                     Check(!PeekMessage(out message,window,0x100,0x101,1),"Exactly one down/up pair");
                 }
                 using(var foreign = new AutoSprint(Process.GetCurrentProcess().Id+1)) {

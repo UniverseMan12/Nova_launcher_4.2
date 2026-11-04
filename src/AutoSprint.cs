@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 
 // Emit transitions, never keyboard-repeat pulses. Losing focus requires W to be
-// released before rearming; a physical F6 remains owned by the player.
+// released before rearming; a physical F12 remains owned by the player.
 public sealed class AutoSprintState
 {
     bool armed;
@@ -27,7 +27,7 @@ public sealed class AutoSprintState
 // Window messages go only to the client process started by this launcher. No
 // SendInput, global key hook, OS keyboard-state changes or game-memory writes.
 // W stays exclusively a movement input. Native Fortnite handles the separate
-// F6 Sprint action, including its normal airborne/crouch restrictions.
+// F12 Sprint action, including its normal airborne/crouch restrictions.
 public sealed class AutoSprint : IDisposable
 {
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
@@ -53,19 +53,19 @@ public sealed class AutoSprint : IDisposable
     }
     void Send(int transition) {
         if (transition == 0 || !IsClientWindow(target)) return;
-        // F6 is a non-modifier: Unreal periodically reconciles Shift with the
+        // F12 is a non-modifier: Unreal periodically reconciles Shift with the
         // physical keyboard state, so a synthetic Shift hold cannot work here.
         // Preserve the Windows scan code and previous-state/transition bits.
-        long data = 1 | (0x40L << 16);
+        long data = 1 | (0x58L << 16);
         if (transition < 0) data |= 0xc0000000L;
-        if (!PostMessage(target, transition > 0 ? 0x100u : 0x101u, new IntPtr(0x75), new IntPtr(data)))
+        if (!PostMessage(target, transition > 0 ? 0x100u : 0x101u, new IntPtr(0x7b), new IntPtr(data)))
             throw new InvalidOperationException("Auto-Sprint could not reach the Fortnite window.");
     }
     public void Tick() {
         if (disposed) return;
         IntPtr foreground = GetForegroundWindow();
         bool eligible = IsClientWindow(foreground);
-        bool manual = eligible && Down(0x75);
+        bool manual = eligible && Down(0x7b);
         if (eligible && foreground != target) {
             Send(state.Step(false, false, false));
             target = foreground;
@@ -75,7 +75,7 @@ public sealed class AutoSprint : IDisposable
     }
     public void Dispose() {
         if (disposed) return;
-        try { Send(state.Step(false, false, IsClientWindow(GetForegroundWindow()) && Down(0x75))); }
+        try { Send(state.Step(false, false, IsClientWindow(GetForegroundWindow()) && Down(0x7b))); }
         finally { disposed = true; }
     }
 }

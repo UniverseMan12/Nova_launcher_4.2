@@ -89,15 +89,22 @@ export class LauncherUpdates {
   set(values){Object.assign(this.state,values);this.onState(this.snapshot());}
   async check() {
     if(!this.enabled || this.operation || this.state.phase==='installing')return this.snapshot();
-    // Keep a verified package until explicitly installed or cancelled, including offline checks.
-    if(this.state.phase==='ready')return this.snapshot();
     const controller=new AbortController();this.operation=controller;
+    // Refresh even a cached offer: a broken release may have been withdrawn.
+    // The file stays in the cache, but cannot be installed from stale metadata.
+    this.downloaded=null;
     this.set({phase:'checking',version:null,message:'Checking for a new launcher version...',received:0,total:0});
     try {
       const signal=AbortSignal.any([controller.signal,AbortSignal.timeout(20000)]);
       const raw=await boundedResponse(await this.fetchImpl(LATEST_URL,{headers,signal}),2*1024*1024,signal);
-      this.release=selectRelease(JSON.parse(raw.toString('utf8')),this.currentVersion,this.kind);
-      if(!this.release){this.set({phase:'current',version:null,message:'Your launcher is up to date.'});return this.snapshot();}
+      const latest=JSON.parse(raw.toString('utf8'));
+      this.release=selectRelease(latest,this.currentVersion,this.kind);
+      if(!this.release){
+        const message=isNewer(this.currentVersion,latest.tag_name)
+          ? `Your version is newer than the latest available release (${latest.tag_name.replace(/^v/,'')}). No newer update is available.`
+          : 'Your launcher is up to date.';
+        this.set({phase:'current',version:null,message});return this.snapshot();
+      }
       const sums=await boundedResponse(await this.fetchImpl(this.release.checksums.url,{signal}),65536,signal);
       this.release.sha256=checksumFor(sums.toString('utf8'),this.release.asset.name);
       await fs.mkdir(this.cache,{recursive:true});
@@ -128,6 +135,19 @@ export class LauncherUpdates {
     this.set({phase:'installing',message:'Preparing update. The launcher will restart...'});
     try {
       if(await fileHash(this.downloaded)!==this.release.sha256)throw new Error('The downloaded update changed. Please download it again.');
+      const signal=AbortSignal.timeout(20000);
+      let offered,sha256;
+      try {
+        const raw=await boundedResponse(await this.fetchImpl(LATEST_URL,{headers,signal}),2*1024*1024,signal);
+        offered=selectRelease(JSON.parse(raw.toString('utf8')),this.currentVersion,this.kind);
+        if(!offered || offered.tag!==this.release.tag || offered.asset.url!==this.release.asset.url || offered.asset.size!==this.release.asset.size)
+          throw new Error('The available release changed or was withdrawn. Check for updates again.');
+        const sums=await boundedResponse(await this.fetchImpl(offered.checksums.url,{signal}),65536,signal);
+        sha256=checksumFor(sums.toString('utf8'),offered.asset.name);
+      } catch(error) {
+        throw new Error(`The update could not be revalidated. ${error.message} Your current launcher and cached download were kept.`);
+      }
+      if(sha256!==this.release.sha256)throw new Error('The release package changed after downloading. Check for updates and download it again.');
       // Re-check after hashing: a game launch could have been requested in the meantime.
       if(!this.canInstall())throw new Error('Stop your current session before updating the launcher.');
       await this.installer({file:this.downloaded,sha256:this.release.sha256,version:this.release.version,kind:this.kind});

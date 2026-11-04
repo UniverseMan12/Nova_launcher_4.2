@@ -40,6 +40,8 @@ test('local backend: login, profile, F8 hotfix, matchmaking and XMPP readiness',
   const once = fs.readFileSync(path.join(temporary, 'index.js'), 'utf8');
   patchBackend(temporary);
   assert.equal(fs.readFileSync(path.join(temporary, 'index.js'), 'utf8'), once, 'patches are idempotent');
+  const unicodeHotfix='; Grösse und Steuerung\n[/Script/Test]\nLabel=é\n';
+  fs.writeFileSync(path.join(temporary,'CloudStorage','UnicodeFixture.ini'),unicodeHotfix,'utf8');
   const port = await unusedPort(), xmppPort = await unusedPort();
   backend = await startBackend({ directory: temporary, port, xmppPort, profileDirectory:path.join(temporary,'profile'), settingsRoot:temporary });
   await assert.rejects(assertFreePort(port), /already in use/);
@@ -53,6 +55,12 @@ test('local backend: login, profile, F8 hotfix, matchmaking and XMPP readiness',
   assert.equal(status[0].status, 'UP');
   const input = await (await request('/fortnite/api/cloudstorage/system/DefaultInput.ini')).text();
   assert.match(input, /ConsoleKeys=F8/);
+  const cloudFiles=await (await request('/fortnite/api/cloudstorage/system')).json();
+  const cloudMeta=cloudFiles.find(file=>file.filename==='UnicodeFixture.ini');
+  const cloudBytes=Buffer.from(await (await request('/fortnite/api/cloudstorage/system/UnicodeFixture.ini')).arrayBuffer());
+  assert.equal(cloudMeta.length,cloudBytes.length,'System hotfix metadata must match UTF-8 download bytes');
+  assert.equal(cloudMeta.hash256,crypto.createHash('sha256').update(cloudBytes).digest('hex'));
+  assert.equal(cloudBytes.toString('utf8'),unicodeHotfix);
   const profileResponse = await request('/fortnite/api/game/v2/profile/TestPlayer/client/QueryProfile?profileId=athena&rvn=-1', { method: 'POST', body: '{}' });
   assert.equal(profileResponse.status, 200);
   const profile = await profileResponse.json();
@@ -160,7 +168,7 @@ test('settings hashes match downloads, Auto-Sprint is reversible, and locker sur
   const upload=bytes=>request(user+'/ClientSettings.Sav',{method:'PUT',headers:{'user-agent':userAgent,'content-type':'application/octet-stream'},body:bytes});
   backend=await makeBackend('release-one',true);
   let bytes=await download();let parsed=inputSettings.parse(bytes);
-  assert.equal(parsed.sprint[0].value,'F6');assert.equal(bytes[parsed.toggle.boolOffset],0);
+  assert.equal(parsed.sprint[0].value,'F12');assert.equal(bytes[parsed.toggle.boolOffset],0);
   let [meta]=await (await request(user)).json();
   assert.equal(meta.length,bytes.length);assert.equal(meta.hash256,crypto.createHash('sha256').update(bytes).digest('hex'));
   assert.equal((await upload(bytes)).status,204);

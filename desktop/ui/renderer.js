@@ -2,6 +2,39 @@ const $ = id => document.getElementById(id);
 let mode = 'solo', busy = false, gameMode = 'classic', latestState, initialized = false;
 let displayedInstall;
 let launcherUpdate, updateDismissed=false, releaseChanges;
+let sprintAcknowledged=false, sprintSaving=false;
+function settingsInput() {
+  const autoSprint=$('auto-sprint').checked;
+  return {autoSprint,...(autoSprint && sprintAcknowledged ? {autoSprintBetaAcknowledged:1} : {}),mode,gameMode,gamePath:$('game-path').value,host:$('host-address').value};
+}
+function renderSprint() {
+  $('sprint-state').textContent=$('auto-sprint').checked ? 'Beta enabled · Switch off and restart Fortnite if movement glitches.' : 'Off · Your normal sprint controls are used.';
+  $('auto-sprint').disabled=busy || sprintSaving;
+  $('sprint-beta-enable').disabled=busy || sprintSaving;
+  $('sprint-beta-cancel').disabled=sprintSaving;
+}
+function cancelSprint() {
+  if(sprintSaving)return;
+  $('sprint-beta').close();
+  $('auto-sprint').focus();
+}
+async function setSprint(enabled) {
+  if(busy || sprintSaving)return;
+  const previous=$('auto-sprint').checked, acknowledged=sprintAcknowledged;
+  $('auto-sprint').checked=enabled;sprintAcknowledged=enabled;sprintSaving=true;renderSprint();
+  try {
+    const saved=await window.launcher.saveSettings(settingsInput());
+    if(saved!==true)throw new Error('Settings could not be saved while a session is starting.');
+    if($('sprint-beta').open)$('sprint-beta').close();
+    $('sprint-beta-error').textContent='';
+  } catch(error) {
+    $('auto-sprint').checked=previous;sprintAcknowledged=acknowledged;
+    if($('sprint-beta').open)$('sprint-beta-error').textContent=error.message;else showError(error);
+  } finally {sprintSaving=false;renderSprint();$('auto-sprint').focus();}
+}
+$('sprint-beta-cancel').onclick=cancelSprint;
+$('sprint-beta-enable').onclick=()=>setSprint(true);
+$('sprint-beta').addEventListener('cancel',event=>{event.preventDefault();cancelSprint();});
 function showChanges() {
   if (!releaseChanges) return;
   $('changelog-version').textContent='VERSION '+releaseChanges.version;
@@ -12,7 +45,7 @@ function showChanges() {
   if (!$('changelog').open) $('changelog').showModal();
 }
 async function closeChanges() {
-  try {await window.launcher.acknowledgeChanges();$('changelog').close();}
+  try {await window.launcher.acknowledgeChanges();$('changelog-error').textContent='';$('changelog').close();}
   catch(error) {$('changelog-error').textContent=error.message;}
 }
 $('open-changelog').onclick=showChanges;
@@ -37,7 +70,7 @@ function renderUpdate(value) {
   $('open-updates').textContent=['available','ready'].includes(value.phase)?'Update available ↻':'Launcher updates ↻';
 }
 function saveSettings() {
-  if (initialized && !busy) return safely(() => window.launcher.saveSettings({autoSprint:$('auto-sprint').checked, mode, gameMode, gamePath:$('game-path').value, host:$('host-address').value}));
+  if (initialized && !busy && !sprintSaving) return safely(() => window.launcher.saveSettings(settingsInput()));
 }
 const titles = { play: 'Back to the island.', setup: 'A little setup. Then play.', activity: 'Your session, step by step.' };
 const notes = {
@@ -80,7 +113,7 @@ function renderRules() {
   if (art.getAttribute('src') !== source) art.src = source;
   art.alt = useThanos ? 'Thanos holding the Infinity Gauntlet' : 'Carbide and Omega face off in Fortnite Season 4';
   $('hero-title').innerHTML = thanos && local ? 'WIELD<br>THE POWER.' : useThanos ? 'INFINITY.<br>YOUR WAY.' : 'BRACE<br>FOR IMPACT.';
-  $('hero-description').textContent = thanos && local ? 'The whole island. A falling Infinity Gauntlet. Find it. Become Thanos.' : useThanos ? 'One random Thanos. Ten second chances. Drop into a fixed endgame arena.' : 'The original island. The familiar drop. Your next session starts here.';
+  $('hero-description').textContent = thanos && local ? 'The whole island. Find the Infinity Gauntlet. Become Thanos.' : useThanos ? 'One random Thanos. Ten second chances. Drop into a fixed endgame arena.' : 'The original island. The familiar drop. Your next session starts here.';
   $('rules-description').textContent = mode === 'join' ? 'Your host chooses the game mode. Paste their invitation below.' : thanos ? 'Full map · Gauntlet drop · Normal storm · No Showdown respawns. Experimental.' : showdown ? 'Random Thanos · 10 respawns · Retained loot · Fixed arena. Experimental.' : 'Solo practice or a private match with friends.';
   if (showdown && mode !== 'join') $('mode-note').textContent = 'Choose Start server in Reboot. Once everyone has joined the island, click Start Bus. The server chooses Thanos automatically.';
   else if (thanos && local) $('mode-note').textContent = 'Thanos is preselected in Reboot. Click Start server, then Play in Fortnite. Start Bus Countdown when everyone is ready.';
@@ -91,7 +124,6 @@ function renderRules() {
 }
 function selectRules(value) {
   gameMode = value;
-  if (value === 'infinity' && mode === 'solo') selectMode('host');
   renderRules();
   saveSettings();
 }
@@ -115,6 +147,8 @@ function render(state) {
   }
   renderRules();
   for (const el of document.querySelectorAll('.mode, #game-path, #host-address, #browse, #check, #prepare, #launch, #edit-folder, #auto-sprint')) el.disabled = busy;
+  renderSprint();
+  if(busy && $('sprint-beta').open && !sprintSaving)cancelSprint();
   $('download-progress').hidden = state.action !== 'download' || Boolean(state.installedPath);
   const transfer = state.progress;
   const labels = {downloading:'Downloading',retrying:'Connection interrupted — resuming',verifying:'Checking download',inspecting:'Checking archive',extracting:'Unpacking game',checking:'Verifying Fortnite 4.2'};
@@ -177,7 +211,7 @@ async function start(action) {
   }
   if (!$('game-path').value.trim()) { showPage('setup'); $('game-path').focus(); throw new Error('Choose your Fortnite folder first.'); }
   if (action === 'launch' && mode === 'join' && !$('host-address').value.trim()) { showPage('play'); $('host-address').focus(); throw new Error('Enter your host’s VPN or LAN IPv4 address.'); }
-  await window.launcher.start(action, { mode, gamePath: $('game-path').value, host: $('host-address').value, gameMode, autoSprint:$('auto-sprint').checked });
+  await window.launcher.start(action, settingsInput());
   if (action === 'launch') showPage('play'); else showPage('activity');
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => showPage(el.dataset.page)));
@@ -189,7 +223,15 @@ $('edit-folder').onclick = browseFolder;
 $('back-play').onclick = () => showPage('play');
 $('game-path').oninput = updateFolder;
 $('host-address').oninput = saveSettings;
-$('auto-sprint').onchange = saveSettings;
+$('auto-sprint').onchange = () => {
+  const enabling=$('auto-sprint').checked;
+  // The checkbox stays off until the warning is explicitly accepted and saved.
+  $('auto-sprint').checked=!enabling;
+  if(enabling) {
+    $('sprint-beta-error').textContent='';
+    $('sprint-beta').showModal();$('sprint-beta-cancel').focus();
+  } else setSprint(false);
+};
 $('thanos-variant').onchange = () => selectRules($('thanos-variant').value);
 $('browse').onclick = browseFolder;
 for (const [button, action] of [['launch','launch'], ['check','check'], ['prepare','prepare']]) $(button).onclick = () => safely(() => start(action));
@@ -215,7 +257,8 @@ safely(async () => {
   $('app-version').textContent = initial.version;
   $('game-path').value = initial.settings.gamePath || '';
   $('host-address').value = initial.settings.host || '';
-  $('auto-sprint').checked = initial.settings.autoSprint === true;
+  sprintAcknowledged=initial.settings.autoSprintBetaAcknowledged===1;
+  $('auto-sprint').checked = initial.settings.autoSprint === true && sprintAcknowledged;
   gameMode = ['classic','thanos','infinity'].includes(initial.settings.gameMode) ? initial.settings.gameMode : 'classic';
   selectMode(['solo','host','join'].includes(initial.settings.mode) ? initial.settings.mode : 'solo');
   updateFolder(); render(initial); initialized = true;

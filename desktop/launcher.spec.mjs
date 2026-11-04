@@ -7,7 +7,7 @@ let app, page, userData;
 const sendUpdate=(value)=>app.evaluate(({BrowserWindow},value)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:update',value),value);
 test.beforeEach(async () => {
   userData = fs.mkdtempSync(path.join(os.tmpdir(), 'launcher-ui-'));
-  const env = { ...process.env, LAUNCHER_TEST_DATA: userData }; delete env.ELECTRON_RUN_AS_NODE;
+  const env = { ...process.env, LAUNCHER_TEST_DATA: userData, LAUNCHER_TEST_HIDDEN:'1' }; delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], env });
   page = await app.firstWindow();
   await expect(page.locator('#app-version')).toHaveText('0.4.4');
@@ -17,21 +17,85 @@ test.beforeEach(async () => {
 });
 test.afterEach(async () => { await app?.close(); fs.rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); });
 
-test('Auto-Sprint persists and cannot be changed during a session', async () => {
+test('Auto-Sprint beta requires explicit acceptance on every enable and retains accepted settings', async () => {
   await page.locator('[data-page="setup"]').click();
-  await page.locator('#auto-sprint').check();
+  await expect(page.locator('.sprint-option')).toContainText('BETA');
+  await expect(page.locator('#sprint-known-issues')).toContainText('moonwalking');
+  await page.locator('#auto-sprint').click();
+  await expect(page.locator('#auto-sprint')).not.toBeChecked();
+  await expect(page.locator('#sprint-beta')).toBeVisible();
+  await expect(page.locator('#sprint-beta-cancel')).toBeFocused();
+  await page.locator('#sprint-beta-cancel').click();
+  await expect(page.locator('#auto-sprint')).not.toBeChecked();
+  await expect(page.locator('#auto-sprint')).toBeFocused();
+  await page.locator('#auto-sprint').click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#sprint-beta')).toBeHidden();
+  await expect(page.locator('#auto-sprint')).not.toBeChecked();
+  await page.locator('#auto-sprint').click();
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.screenshot({path:'test-results/auto-sprint-beta.png'});
+  await page.locator('#sprint-beta-enable').click();
   await expect.poll(()=>JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).autoSprint).toBe(true);
+  expect(JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).autoSprintBetaAcknowledged).toBe(1);
   await page.reload();await page.locator('[data-page="setup"]').click();
   await expect(page.locator('#auto-sprint')).toBeChecked();
+  await page.locator('#auto-sprint').uncheck();
+  await expect.poll(()=>JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).autoSprint).toBe(false);
+  expect(JSON.parse(fs.readFileSync(path.join(userData,'settings.json'),'utf8')).autoSprintBetaAcknowledged).toBeUndefined();
+  await page.locator('#auto-sprint').click();
+  await expect(page.locator('#sprint-beta')).toBeVisible();
+  await page.locator('#sprint-beta-enable').click();
+  await expect(page.locator('#sprint-beta')).toBeHidden();
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',{busy:true,phase:'launch',events:[],addresses:[]}));
   await expect(page.locator('#auto-sprint')).toBeDisabled();
+});
+
+test('legacy Auto-Sprint is off after upgrading and cannot bypass the warning through IPC', async () => {
+  await app.close();
+  fs.writeFileSync(path.join(userData,'settings.json'),JSON.stringify({mode:'solo',gamePath:'C:/game',autoSprint:true}));
+  const env={...process.env,LAUNCHER_TEST_DATA:userData,LAUNCHER_TEST_HIDDEN:'1'};delete env.ELECTRON_RUN_AS_NODE;
+  app=await electron.launch({args:['.'],env});page=await app.firstWindow();
+  await page.locator('[data-page="setup"]').click();
+  await expect(page.locator('#auto-sprint')).not.toBeChecked();
+  const message=await page.evaluate(()=>window.launcher.start('launch',{mode:'solo',gamePath:'C:/game',autoSprint:true}).catch(error=>error.message));
+  expect(message).toContain('experimental beta');
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(940,700));
+  await page.locator('#auto-sprint').click();
+  await expect(page.locator('#sprint-beta-cancel')).toBeInViewport();
+  await expect(page.locator('#sprint-beta-enable')).toBeInViewport();
+  expect(await page.locator('#sprint-beta').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
+});
+
+test('a failed beta save leaves Auto-Sprint off and keeps the warning actionable', async () => {
+  await page.locator('[data-page="setup"]').click();
+  await page.locator('#auto-sprint').click();
+  await app.evaluate(() => {
+    const fs=process.getBuiltinModule('fs');
+    const original=fs.openSync;
+    globalThis.restoreTestSettingsWrite=()=>{fs.openSync=original;};
+    fs.openSync=(file,...args)=>{
+      if(/[\\/]settings\.json(?:\.|$)/.test(String(file)))throw new Error('Test settings file is read-only');
+      return original(file,...args);
+    };
+  });
+  try {
+    await page.locator('#sprint-beta-enable').click();
+    await expect(page.locator('#sprint-beta-error')).toContainText('read-only');
+    await expect(page.locator('#auto-sprint')).not.toBeChecked();
+    await expect(page.locator('#sprint-beta-cancel')).toBeEnabled();
+    await expect(page.locator('#sprint-beta-enable')).toBeEnabled();
+  } finally {await app.evaluate(()=>globalThis.restoreTestSettingsWrite());}
+  await page.locator('#sprint-beta-cancel').click();
+  await page.reload();await page.locator('[data-page="setup"]').click();
+  await expect(page.locator('#auto-sprint')).not.toBeChecked();
 });
 
 test('upgrade changelog is modal, readable, dismisses once and can be reopened', async () => {
   await expect(page.locator('#changelog')).not.toBeVisible();
   await app.close();
   fs.writeFileSync(path.join(userData,'release-history.json'),JSON.stringify({seenVersion:'0.4.2'}));
-  const env={...process.env,LAUNCHER_TEST_DATA:userData};delete env.ELECTRON_RUN_AS_NODE;
+  const env={...process.env,LAUNCHER_TEST_DATA:userData,LAUNCHER_TEST_HIDDEN:'1'};delete env.ELECTRON_RUN_AS_NODE;
   app=await electron.launch({args:['.'],env});page=await app.firstWindow();
   await expect(page.locator('#changelog')).toBeVisible();
   await expect(page.locator('#changelog-version')).toHaveText('VERSION 0.4.4');
@@ -99,6 +163,8 @@ test('navigation, mode selection and empty setup recovery', async () => {
   await page.locator('[data-mode="host"]').click();
   await expect(page.locator('#join-row')).toBeHidden();
   await expect(page.locator('#mode-note')).toContainText('Start Bus Countdown');
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await expect(page.locator('#startup')).toBeHidden();
   await page.screenshot({ path: 'test-results/launcher-home.png' });
 });
 
@@ -114,10 +180,10 @@ test('invalid installation fails visibly and allows another attempt', async () =
   expect(result).toBe('Unknown link.');
 });
 
-test('Infinity Showdown selects hosting and joining leaves rules to the host', async () => {
+test('Infinity Showdown preserves Solo and joining leaves rules to the host', async () => {
   await page.locator('[data-rules="thanos"]').click();
   await page.locator('#thanos-variant').selectOption('infinity');
-  await expect(page.locator('[data-mode="host"]')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('[data-mode="solo"]')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#rules-description')).toContainText('10 respawns');
   await expect(page.locator('#mode-note')).toContainText('click Start Bus');
   await page.emulateMedia({reducedMotion:'reduce'});

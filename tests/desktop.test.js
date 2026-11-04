@@ -21,6 +21,21 @@ test('desktop launch requests reject unsupported actions and missing paths', () 
   assert.throws(()=>validateOptions({mode:'host',gamePath:'C:/game',gameMode:'anything'}),/Choose Classic/);
 });
 
+test('Auto-Sprint requires the current beta warning and legacy enabled profiles return to off', () => {
+  const options={mode:'solo',gameMode:'classic',gamePath:'C:/game',host:'',autoSprint:true};
+  for(const autoSprintBetaAcknowledged of [undefined,false,true,0,2,'1']) {
+    assert.equal(normalizeSettings({...options,autoSprintBetaAcknowledged}).autoSprint,false);
+    assert.throws(()=>validateOptions({...options,autoSprintBetaAcknowledged}),/experimental beta/);
+  }
+  const confirmed={...options,autoSprintBetaAcknowledged:1};
+  assert.equal(normalizeSettings(confirmed).autoSprint,true);
+  assert.equal(validateOptions(confirmed).autoSprintBetaAcknowledged,1);
+  const disabled=normalizeSettings({...confirmed,autoSprint:false});
+  assert.equal(disabled.autoSprint,false);
+  assert.equal(disabled.autoSprintBetaAcknowledged,undefined,'Turning off clears acknowledgement so enabling asks again');
+  assert.equal(normalizeSettings({...disabled,autoSprint:true}).autoSprint,false);
+});
+
 test('packaged workspace verifies payload integrity, rejects path traversal and recovers from interrupted setup', async t => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'launcher-bundle-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));

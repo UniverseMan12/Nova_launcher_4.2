@@ -24,6 +24,9 @@ public static class LegacyDisplay
         return new[] { checked((int)mode.width), checked((int)mode.height) };
     }
     public static string Repair(string file, int width, int height) {
+        return Repair(file, width, height, false);
+    }
+    public static string Repair(string file, int width, int height, bool isolatedSettings) {
         if (width < 320 || height < 200 || width > 32768 || height > 32768) throw new ArgumentOutOfRangeException("width", "Invalid desktop resolution.");
         if (!File.Exists(file)) return null;
         byte[] original = File.ReadAllBytes(file);
@@ -40,7 +43,7 @@ public static class LegacyDisplay
         string changed = Regex.Replace(section.Value, @"(?im)^([^\S\r\n]*)(ResolutionSizeX|ResolutionSizeY|LastUserConfirmedResolutionSizeX|LastUserConfirmedResolutionSizeY)([^\S\r\n]*=[^\S\r\n]*)\d+([^\S\r\n]*)(\r?)$", match =>
             match.Groups[1].Value + match.Groups[2].Value + match.Groups[3].Value + (match.Groups[2].Value.EndsWith("X", StringComparison.OrdinalIgnoreCase) ? width : height) + match.Groups[4].Value + match.Groups[5].Value);
         if (changed == section.Value) return null;
-        if (System.Diagnostics.Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length > 0)
+        if (!isolatedSettings && System.Diagnostics.Process.GetProcessesByName("FortniteClient-Win64-Shipping").Length > 0)
             throw new IOException("Close other Fortnite windows before preparing the 4.2 startup resolution.");
         if ((File.GetAttributes(file) & FileAttributes.ReadOnly) != 0) throw new IOException("GameUserSettings.ini is read-only. Make it writable before launching Fortnite 4.2.");
         string id = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N");

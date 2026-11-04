@@ -24,7 +24,7 @@ for (const [mode, gameMode] of [['host','infinity'],['host','thanos'],['solo','t
   const closed = new Promise((resolve,reject) => {child.once('exit', code => code === 0 ? resolve() : reject(new Error(`Worker exited ${code}`))); child.once('error',reject);});
   child.on('message', message => { events.push(message); if (message.type==='status' && message.message.startsWith('Fortnite ready.')) child.send({type:'stop'}); });
   const autoSprint = mode !== 'join';
-  child.send({ type:'start', action:'launch', options:{autoSprint,mode,gamePath:'C:/game',gameMode,host:'FN42:25.1.2.3'}, root });
+  child.send({ type:'start', action:'launch', options:{autoSprint,...(autoSprint?{autoSprintBetaAcknowledged:1}:{}),mode,gamePath:'C:/game',gameMode,host:'FN42:25.1.2.3'}, root });
   await closed;
   assert.equal(events.some(x => x.type==='addresses'), mode==='host');
   assert.equal(events.some(x => x.type==='test-game' && x.role==='server' && x.gameMode===gameMode), mode!=='join');

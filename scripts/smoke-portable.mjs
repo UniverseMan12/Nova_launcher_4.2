@@ -22,6 +22,7 @@ try {
   page=context.pages()[0] || await context.waitForEvent('page');
   await expect(page.locator('#app-version')).toHaveText('0.4.4');
   await expect(page).toHaveTitle('NOVA DROP');
+  await expect(page.locator('#startup')).toBeHidden();
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);
   await expect(page.locator('.hero-art')).toHaveJSProperty('complete',true);

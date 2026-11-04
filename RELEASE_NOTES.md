@@ -1,15 +1,30 @@
-# NOVA DROP 0.4.4 — gameplay correction test
+# NOVA DROP 0.4.4 — corrective test candidate
 
-**Second test candidate, not a published release.** The first 0.4.4 playtest still had movement errors. The HUD-scale Apply crash remains unresolved.
+**Not a published stable release.** The faulty 0.4.3 GitHub release was removed on November 4, 2026; [0.4.2 remains the latest stable download](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.2). Earlier 0.4.4 tests still had movement problems. The HUD Scale / Apply crash remains unresolved.
 
-- Auto-Sprint now separates the movement and sprint inputs instead of binding both actions to W. Test repeated W press/release, walking, gliding and returning from menus or another window. In-game behavior needs confirmation.
-- Character parts use the correct fixed 4.2 layout, with compatible gender and body size chosen before the appearance is refreshed.
-- The local player reads the outfit, glider, pickaxe, backpack, contrail and emotes saved by the lobby. A remote friend is never given the host's saved outfit; remote cosmetic delivery is still unconfirmed.
-- Full reset retains the normal-appearance snapshot and reapplies the selected outfit to the new pawn.
-- Clear inventory, practice respawn, the larger text, grouped Thanos picker and update changelog are retained.
+## Changes in this candidate
 
-## Testing
+- **Auto-Sprint is explicitly Beta and off by default.** Enabling it requires a warning acknowledgement each time it is turned on. Older enabled profiles without that acknowledgement return to off. Cancel, Escape or a failed settings save leaves it off. The warning names the reported moonwalking, slow movement and airborne shaking.
+- The sprint helper keeps W as movement and uses a separate F12 action. F6 already belongs to Fortnite 4.2 picker/hotbar controls, so it is no longer used. Custom F12 conflicts prevent activation; disabling the beta restores the previous sprint binding and toggle preference. This correction still needs an in-game test.
+- Reset and saved-spot teleports use upright, yaw-only pawn rotations. Complete hero parts are resolved and checked together before changing the character. The last valid normal-appearance snapshot survives incomplete loads or repeated gadget equips, and stale possession acknowledgements cannot overwrite the new pawn. Native inventory cleanup verifies that the Gauntlet was removed. Repeated Thanos/reset behavior remains unconfirmed in-game.
+- The client and headless host prepare separate persistent Fortnite 4.2 settings directories. Only compatible display preferences are imported from the old shared file. Existing isolated settings and the original shared file are retained. The launch command passes `-UserDir`; the game's actual directory selection and any effect on the HUD Apply crash are still unverified.
+- Cached launcher updates are revalidated against the current release and checksum before installation. Withdrawn or changed offers are rejected. A failed check preserves the running launcher and cached download; it does not silently downgrade to an older release. A stale installer marker cannot block startup merely because Windows reused its process ID.
+- Launcher settings are saved atomically. Preference/log write failures remain visible and stop the pending operation instead of crashing the launcher or being replaced by a success message. Unexpected game exits are reported as errors; failure of the optional sprint helper leaves the game running with normal controls.
+- Settings and selected modes are clearer, with restrained teal highlights and the existing larger text. Thanos normal and Infinity Showdown retain one shared card. Choosing Showdown no longer silently changes Solo into Host friends. The rounded, blurred changelog remains available after updates and from the sidebar.
 
-Close the previous launcher/game, open the separately named Sprint test launcher and use Classic / Solo. Enable Auto-Sprint. Check W start/stop several times, gliding, and releasing/repressing W after a window switch. Black Knight and Cloud Strike appeared in the owner's first video; repeated Full reset and remote cosmetics still need confirmation. Test HUD Scale / Apply separately with Auto-Sprint off to narrow down its crash.
+The saved local locker, Clear inventory, practice respawn and Showdown's 20-second random reassignment among all ready players are retained. Remote players are never given the host's saved outfit. The separate bot-lobby prototype is not included.
 
-The native server build and appearance-rule checks passed. Detailed build hashes and the pending gameplay checks are in RELEASE_QA.md. The public 0.4.3 notes disclose its reported bugs; 0.4.2 is temporarily the automatic-update target.
+## Verified so far
+
+All **82 Node/native-helper checks** and **19 hidden desktop UI tests passed** locally. UI coverage includes beta consent/migration, failed-save recovery, update controls, cancellation, mode selection and supported window sizes. Settings migration checks compatible values, separate roles, invalid input and preservation of existing files. The actual game-launch script was tested with harmless hidden child processes for normal/error exits and sprint-helper failure recovery. Native source `34fc7da` compiled successfully in [build 41850329800](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41850329800), including both C++ rules suites. These results do not prove correct Fortnite animation, replication or HUD behavior. Combined desktop packaging/CI verification for the final candidate remains pending.
+
+The owner's earlier video showed Black Knight, Cloud Strike and the selected pickaxe/contrail in the match. It also showed the remaining movement glitches and HUD Apply crash. With Auto-Sprint off, the owner reports normal movement.
+
+## Owner playtest still required
+
+1. Begin with **Auto-Sprint off** in Classic / Solo. Check the selected lobby outfit/glider, normal walking and gliding. Change HUD Scale and click Apply; report whether it crashes.
+2. Transform into Thanos, use **Full reset (exit Thanos)**, then repeat. Check upright proportions, normal movement, restored cosmetics, health/shield and Clear inventory. Test Respawn me and saved-spot return too.
+3. Only when ready to test the experimental feature, enable **Auto-Sprint (Beta)** and accept its warning, then restart Fortnite. Check repeated W start/stop, gliding, menus/console and switching away from the game. Turn it off and restart if movement glitches return.
+4. In a separate two-player test, check each player's own cosmetics and Showdown death/respawn/reselection. Verify that every ready player remains eligible after the shared 20-second delay.
+
+No live Fortnite session was started or controlled by the agent for this audit. Current native/build provenance, historical evidence and outstanding checks are recorded in [RELEASE_QA.md](RELEASE_QA.md).

@@ -32,9 +32,15 @@ try {
     if ($Mode -eq 'server' -and (Get-NetUDPEndpoint -LocalPort 7777 -ErrorAction SilentlyContinue)) { throw 'UDP port 7777 is already in use.' }
     Add-Type -Path (Join-Path $projectRoot 'src\NativeProcess.cs')
     Add-Type -Path (Join-Path $projectRoot 'src\LegacyDisplay.cs')
+    Add-Type -Path (Join-Path $projectRoot 'src\LegacyGameData.cs')
     $desktopSize = [LegacyDisplay]::DesktopSize()
-    $settingsFile = Join-Path $env:LOCALAPPDATA 'FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini'
-    $settingsBackup = [LegacyDisplay]::Repair($settingsFile, $desktopSize[0], $desktopSize[1])
+    $oldSettingsFile = Join-Path $env:LOCALAPPDATA 'FortniteGame\Saved\Config\WindowsClient\GameUserSettings.ini'
+    $gameDataRoot = Join-Path $projectRoot 'data\game-data'
+    if ($env:LAUNCHER_PROFILE_DIR) { $gameDataRoot = Join-Path (Split-Path $env:LAUNCHER_PROFILE_DIR -Parent) 'game-data' }
+    $gameUserDirectory = [LegacyGameData]::Prepare($gameDataRoot, $Mode, $oldSettingsFile)
+    $gameSavedDirectory = Join-Path $gameUserDirectory 'Saved'
+    $settingsFile = Join-Path $gameSavedDirectory 'Config\WindowsClient\GameUserSettings.ini'
+    $settingsBackup = [LegacyDisplay]::Repair($settingsFile, $desktopSize[0], $desktopSize[1], $true)
     if ($settingsBackup) { Write-Output "[$Mode] Startup resolution adjusted for Fortnite 4.2. Original settings: $settingsBackup" }
     $session = New-Object LocalGameSession
     # Work around legacy Unreal/OpenSSL initialization issues on newer Intel CPUs.
@@ -55,12 +61,17 @@ try {
     $playerName = $config.username
     if ($Mode -eq 'server') { $playerName = 'LocalHost' }
     $arguments = '-epicapp=Fortnite -epicenv=Prod -epiclocale=en-us -epicportal -skippatchcheck -nobe -AUTH_TYPE=epic -AUTH_LOGIN=' + $playerName + '@local.invalid -AUTH_PASSWORD=LocalOnly -log -forcelogflush -ABSLOG="' + $log + '"'
+    # UserDir is present in CL-4072250. Each role keeps independent persistent
+    # settings/logs; the client uses its saved display mode and resolution.
+    $arguments += ' -UserDir="' + $gameUserDirectory + '"'
     if ($Mode -eq 'server') { $arguments += ' -nosplash -nosound -nullrhi -windowed -port=7777' }
-    else { $arguments += ' -windowed -ResX=1280 -ResY=720' }
     $gameId = $session.Start($exe, $arguments, $false, $working, ($Mode -eq 'server'))
     Write-Output "[$Mode] Fortnite started (PID $gameId). Connecting to the local backend..."
     $session.LoadLibrary($gameId, (Join-Path $projectRoot 'runtime\sinum.dll'))
     $game = Get-Process -Id $gameId
+    # Windows PowerShell's Get-Process does not retain a handle by default.
+    # Open it while the child is alive so ExitCode remains available after exit.
+    $null = $game.Handle
     $deadline = (Get-Date).AddMinutes(4)
     $loggedIn = $false
     $actualLog = $log
@@ -73,7 +84,7 @@ try {
         # instance's unique command-line marker, never by a stale login message.
         if ($null -eq $logReader) {
             if (-not (Test-Path -LiteralPath $actualLog)) {
-                $defaultLogs = Join-Path $env:LOCALAPPDATA 'FortniteGame\Saved\Logs'
+                $defaultLogs = Join-Path $gameSavedDirectory 'Logs'
                 foreach ($candidate in @(Get-ChildItem -LiteralPath $defaultLogs -Filter '*.log' -ErrorAction SilentlyContinue)) {
                     $header = Get-Content -LiteralPath $candidate.FullName -TotalCount 160 -ErrorAction SilentlyContinue
                     if ($header | Select-String -SimpleMatch $log) { $actualLog = $candidate.FullName; break }
@@ -146,8 +157,22 @@ try {
     if ($Mode -eq 'server') {
         while (-not $game.WaitForExit(500)) { $session.HideServerViewport($gameId) }
     } elseif ($null -ne $autoSprint) {
-        while (-not $game.WaitForExit(8)) { $autoSprint.Tick() }
+        while (-not $game.WaitForExit(8)) {
+            try { $autoSprint.Tick() }
+            catch {
+                [Console]::Error.WriteLine('[client] Experimental Auto-Sprint stopped; normal controls remain available. ' + $_.Exception.Message)
+                try { $autoSprint.Dispose() } catch { }
+                $autoSprint = $null
+                $game.WaitForExit()
+                break
+            }
+        }
     } else { $game.WaitForExit() }
+    # A crashed client must not look like an ordinary return to the launcher.
+    # The retained handle keeps the actual child exit code available here.
+    if ($game.ExitCode -ne 0) {
+        throw "Fortnite $Mode stopped unexpectedly (exit code $($game.ExitCode)). Game log: $actualLog"
+    }
 } catch {
     [Console]::Error.WriteLine("[$Mode] " + $_.Exception.Message)
     exit 1

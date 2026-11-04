@@ -82,7 +82,7 @@ function parse(buffer) {
           if (binding.struct !== 'Key') throw Error('Unsupported action key.');
           const keyName = list(binding.body, binding.end).items.find(x=>x.name==='KeyName');
           if (keyName?.type !== 'NameProperty') throw Error('Missing action key name.');
-          if (string(keyName.body,keyName.end).value === 'F6') reservedConflicts.push(actionName);
+          if (string(keyName.body,keyName.end).value === 'F12') reservedConflicts.push(actionName);
         }
         if (actionName === 'Sprint') {
           const key = row.items.find(x => x.name === 'KeyBind2');
@@ -125,16 +125,16 @@ function autoSprint(buffer) {
   const value = buffer?.length ? buffer : seed();
   const data = parse(value);
   if (data.sprint.length > 1) throw Error("Ambiguous sprint bindings.");
-  if (data.reservedConflicts.length) throw Error('F6 is already assigned to another action. Free that secondary key in Fortnite before enabling Auto-Sprint.');
+  if (data.reservedConflicts.length) throw Error('F12 is already assigned to another action. Free that secondary key in Fortnite before enabling Auto-Sprint.');
   // W must never be bound to both an action and the movement axis. The scoped
-  // client helper supplies F6; the native preset covers a missing row.
-  return rewrite(value, {key: data.sprint.length ? 'F6' : undefined, toggle: false});
+  // client helper supplies F12; the native preset covers a missing row.
+  return rewrite(value, {key: data.sprint.length ? 'F12' : undefined, toggle: false});
 }
 function restorePreferences(incoming, original) {
   const before = parse(original?.length ? original : seed());
   const after = parse(incoming);
   if (before.sprint.length > 1 || after.sprint.length > 1) throw Error('Ambiguous sprint bindings.');
-  const key = after.sprint[0]?.value === 'F6' ? (before.sprint[0]?.value ?? 'None') : undefined;
+  const key = after.sprint[0]?.value === 'F12' ? (before.sprint[0]?.value ?? 'None') : undefined;
   return rewrite(incoming, {key, toggle: before.toggle ? !!(original?.length ? original : seed())[before.toggle.boolOffset] : null});
 }
 function read(file, enabled) {

@@ -17,6 +17,7 @@ try {
   const page = await app.firstWindow();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
   await expect(page.locator('#app-version')).toHaveText('0.4.4');
+  await expect(page.locator('#startup')).toBeHidden();
   if (['thanos','infinity'].includes(process.env.LAUNCHER_SMOKE_RULES)) await page.locator(`[data-rules="${process.env.LAUNCHER_SMOKE_RULES}"]`).click();
   await page.locator('[data-page="setup"]').click();
   await page.locator('#game-path').fill(process.env.LAUNCHER_SMOKE_GAME || fakeGame);

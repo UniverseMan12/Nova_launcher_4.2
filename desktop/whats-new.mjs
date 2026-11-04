@@ -3,10 +3,12 @@ import path from 'node:path';
 import {isNewer, versionParts} from './updates.mjs';
 
 export const changes = Object.freeze([
-  {title:'Auto-Sprint — second test', text:'Separate movement and sprint inputs. Please check repeated starts, stops and gliding. The HUD-scale Apply crash is still under investigation.'},
-  {title:'Your outfit, in the match', text:'Black Knight, Cloud Strike and the selected pickaxe appeared in the local test. Multiplayer loadouts still need a separate check.'},
-  {title:'Character proportions', text:'Corrected the body-part layout and skeleton selection used when spawning and resetting out of Thanos.'},
-  {title:'Practice tools retained', text:'Clear inventory and practice respawn remain available. This build needs an in-game check before the fixes are confirmed.'}
+  {title:'Auto-Sprint is now clearly a beta', text:'Off by default, with a warning before every enable. Existing unconfirmed settings return to off. Movement glitches are still being investigated.'},
+  {title:'Thanos reset corrections', text:'Respawns use an upright pose and restore compatible normal body parts. Repeated transformations still need an in-game check.'},
+  {title:'Your outfit, in the match', text:'Selected outfits and equipment carry into the match. Black Knight and Cloud Strike passed the local check; multiplayer still needs testing.'},
+  {title:'Separate Fortnite 4.2 settings', text:'The host and player keep their own settings. Game crashes are reported instead of showing a normal end to the session. The HUD Apply crash still needs testing.'},
+  {title:'Updates checked again before installing', text:'Downloaded updates are checked against the current GitHub release. Withdrawn or changed packages are rejected, and saved launcher settings are protected during writes.'},
+  {title:'A clearer Play screen', text:'Solo stays Solo when you choose Infinity Showdown. Thanos and Showdown share one card, with clearer selections and readable settings.'},
 ]);
 
 export class WhatsNew {
