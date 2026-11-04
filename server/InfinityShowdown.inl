@@ -1,6 +1,7 @@
 // Included after LocalTools.inl in NetDriver.cpp. All mutations run on the game thread.
 #include "InfinityShowdown.h"
 #include "InfinityRules.h"
+#include "DeathCreditRules.h"
 #include <unordered_map>
 #include <random>
 #include <cmath>
@@ -21,6 +22,7 @@ namespace InfinityShowdown {
     struct Player {
         Ref controller, protectedPawn;
         InfinityRules::Lives lives;
+        DeathCreditRules::HandledDeaths handledDeaths;
         InfinityRules::Landing landing;
         std::vector<SavedItem> equipment;
         Appearance appearance;
@@ -450,7 +452,8 @@ namespace InfinityShowdown {
         player.lives.Spawned();
         Tell(controller, "Respawned above the arena. " + std::to_string(player.lives.remaining) + " respawns remaining."); return true;
     }
-    bool OnDeath(AFortPlayerController* controller) {
+    bool OnDeath(AFortPlayerController* controller, bool& newHandledDeath) {
+        newHandledDeath = false;
         if (!Enabled.load() || Faulted) return false;
         auto game = Cast<AFortGameStateAthena>(GetWorld()->GetGameState());
         if (!game || game->GetGamePhase() < EAthenaGamePhase::Aircraft || game->GetGamePhase() == EAthenaGamePhase::EndGame) return false;
@@ -473,6 +476,7 @@ namespace InfinityShowdown {
         }
         player.respawnAt = game->GetServerWorldTimeSeconds() + 3;
         pawn->SetCanBeDamaged(false);
+        newHandledDeath = player.handledDeaths.Claim((uint64_t(uint32_t(life.serial)) << 32) | uint32_t(life.index));
         Tell(controller, "Respawning in 3 seconds. Your equipment is kept."); return true;
     }
     void Tick(UNetDriver* driver) {

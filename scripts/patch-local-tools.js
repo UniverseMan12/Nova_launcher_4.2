@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 export function patchLocalTools(root) {
   const dir = path.join(root, 'Project Reboot 3.0');
   const source = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'server');
-  for (const name of ['LocalTools.h', 'LocalToolsAppearance.inl', 'LocalTools.inl', 'LocalToolsUI.inl', 'LocalToolsCatalog.h', 'LocalToolsCommands.inl', 'InfinityRules.h', 'InfinityShowdown.h', 'InfinityShowdown.inl']) {
+  for (const name of ['LocalTools.h', 'LocalToolsAppearance.inl', 'LocalTools.inl', 'LocalToolsUI.inl', 'LocalToolsCatalog.h', 'LocalToolsCommands.inl', 'InfinityRules.h', 'InfinityShowdown.h', 'InfinityShowdown.inl', 'DeathCreditRules.h']) {
     fs.copyFileSync(path.join(source, name), path.join(dir, name));
   }
   const edit = (name, replacements) => {
@@ -34,6 +34,33 @@ export function patchLocalTools(root) {
     ['void AFortPlayerController::ClientOnPawnDiedHook(AFortPlayerController* PlayerController, void* DeathReport)\n{',
      'void AFortPlayerController::ClientOnPawnDiedHook(AFortPlayerController* PlayerController, void* DeathReport)\n{\n\tif (LocalTools::OnDeath(PlayerController)) return;']
   ]);
+  // Respawn handling bypasses native final-elimination bookkeeping. Preserve
+  // the native kill credit separately, only for the first handled death event.
+  const controllerFile = path.join(dir, 'FortPlayerController.cpp');
+  let controller = fs.readFileSync(controllerFile, 'utf8').replace(/\r\n/g, '\n');
+  if (!controller.includes('// Launcher handled-death credit v1')) {
+    const before = '\tif (LocalTools::OnDeath(PlayerController)) return;';
+    if (controller.split(before).length !== 2) throw new Error('Cannot upgrade local death credit handler.');
+    controller = controller.replace(before, `\t// Launcher handled-death credit v1
+\tbool newHandledDeath = false;
+\tif (LocalTools::OnDeath(PlayerController, newHandledDeath)) {
+\t\tif (newHandledDeath && DeathReport && MemberOffsets::DeathReport::KillerPlayerState >= 0) {
+\t\t\tauto victim = Cast<AFortPlayerStateAthena>(PlayerController->GetPlayerState());
+\t\t\tauto rawKiller = *(AFortPlayerState**)(__int64(DeathReport) + MemberOffsets::DeathReport::KillerPlayerState);
+\t\t\tauto killer = rawKiller && rawKiller->IsValidLowLevel() ? Cast<AFortPlayerStateAthena>(rawKiller) : nullptr;
+\t\t\t// Match upstream: no suicide credit; team kills use its same score path.
+\t\t\tif (victim && killer && killer != victim) {
+\t\t\t\tif (MemberOffsets::FortPlayerStateAthena::KillScore >= 0)
+\t\t\t\t\tkiller->Get<int>(MemberOffsets::FortPlayerStateAthena::KillScore)++;
+\t\t\t\tif (MemberOffsets::FortPlayerStateAthena::TeamKillScore >= 0)
+\t\t\t\t\tkiller->Get<int>(MemberOffsets::FortPlayerStateAthena::TeamKillScore)++;
+\t\t\t\tkiller->ClientReportKill(victim);
+\t\t\t}
+\t\t}
+\t\treturn;
+\t}`);
+    fs.writeFileSync(controllerFile, controller);
+  }
   edit('commands.cpp', [
     ['#include "commands.h"', '#include "commands.h"\n#include "LocalTools.h"'],
     ['\t\tif (Command == "giveitem")',

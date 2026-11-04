@@ -8,6 +8,7 @@
 #include "GameModeBase.h"
 #include "KismetStringLibrary.h"
 #include "LauncherCharacterParts.h"
+#include "DeathCreditRules.h"
 #include <chrono>
 
 namespace LocalTools {
@@ -33,6 +34,8 @@ namespace LocalTools {
         }
     };
     static TrackedObject SessionPlayer, DeadController;
+    static TrackedObject DeathCreditController;
+    static DeathCreditRules::HandledDeaths HandledDeaths;
     static std::vector<TrackedObject> SpawnedLoot;
     static auto LastAction = std::chrono::steady_clock::time_point{};
 
@@ -94,15 +97,22 @@ namespace LocalTools {
 
     #include "LocalToolsAppearance.inl"
 
-    bool OnDeath(AFortPlayerController* controller) {
-        if (InfinityShowdown::Enabled.load()) return InfinityShowdown::OnDeath(controller);
+    bool OnDeath(AFortPlayerController* controller, bool& newHandledDeath) {
+        newHandledDeath = false;
+        if (InfinityShowdown::Enabled.load()) return InfinityShowdown::OnDeath(controller, newHandledDeath);
         if (!PracticeRespawn.load() || !IsLocal(controller)) return false;
         auto pawn = controller->GetMyFortPawn();
         if (!pawn || !pawn->IsValidLowLevel()) return false;
         if (pawn->IsDBNO()) return false; // Let normal teammate revival handle knockdowns.
+        if (DeathCreditController.Get() != controller) {
+            DeathCreditController = TrackedObject(controller); HandledDeaths = {};
+        }
+        const TrackedObject life(pawn);
+        if (!HandledDeaths.Claim((uint64_t(uint32_t(life.serial)) << 32) | uint32_t(life.index))) return true;
         DeadController = TrackedObject(controller);
         DeathLocation = pawn->GetActorLocation();
         HasDeathLocation = true;
+        newHandledDeath = true;
         Report("You died. Click Respawn me. Practice mode keeps your inventory and round.");
         // Do not remove this practice player from AlivePlayers or end the local round.
         return true;
@@ -195,7 +205,7 @@ namespace LocalTools {
             controller->ClientEquipItem(guid, true);
         }
     }
-    static bool RespawnPlayer(AFortPlayerControllerAthena* controller, bool clear = false) {
+    static bool RespawnPlayer(AFortPlayerControllerAthena* controller, bool clear = false, bool fullReset = false) {
         auto mode = Cast<AFortGameModeAthena>(GetWorld()->GetGameMode());
         auto state = Cast<AFortPlayerStateAthena>(controller->GetPlayerState());
         if (!mode || !state || !controller->GetWorldInventory()) { Report("Player inventory or match is not ready."); return false; }
@@ -263,7 +273,13 @@ namespace LocalTools {
         LauncherGameplayLog("local reset: pitch=" + std::to_string(rotation.Pitch) + " roll=" + std::to_string(rotation.Roll) +
             " appearance=" + (appearanceRestored ? "restored" : "failed"));
         if (!appearanceRestored) { Report("Respawned, but restoring the normal animation failed. Rejoin before using Thanos again."); return false; }
-        Report(shieldRestored ? "Respawned with 100 health and shield." : "Respawned. Shield restoration is unavailable in this build.");
+        if (fullReset) {
+            Report(shieldRestored
+                ? "Fully reset: normal outfit, 100 health/shield, empty inventory. Pickaxe and building tools kept."
+                : "Reset: normal outfit, 100 health, empty inventory. Shield restoration is unavailable in this build; pickaxe and building tools kept.");
+        } else {
+            Report(shieldRestored ? "Respawned with 100 health and shield." : "Respawned. Shield restoration is unavailable in this build.");
+        }
         return true;
     }
 
@@ -284,9 +300,8 @@ namespace LocalTools {
                 InfiniteAmmo.store(false); InfiniteMaterials.store(false); AutoHeal.store(false);
             }
             if (action != ClearInventory || HasGauntlet(controller->GetWorldInventory())) {
-                if (RespawnPlayer(controller, action != Respawn) && action == FullReset) {
+                if (RespawnPlayer(controller, action != Respawn, action == FullReset) && action == FullReset) {
                     HasSavedSpot.store(false);
-                    Report("Fully reset: normal outfit, 100 health/shield, empty inventory. Pickaxe and building tools kept.");
                 }
                 return;
             }

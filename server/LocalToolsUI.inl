@@ -4,7 +4,7 @@ static inline void LauncherLocalToolsUI()
     if (InfinityShowdown::Enabled.load()) {
         ImGui::TextColored(ImVec4(0.82f, 0.65f, 1.f, 1.f), "INFINITY SHOWDOWN - EXPERIMENTAL");
         ImGui::TextWrapped("%s", InfinityShowdown::ReadInfo().c_str());
-        ImGui::TextWrapped("10 respawns each. Loot is retained. Thanos rotates on death. Practice tools are disabled.");
+        ImGui::TextWrapped("10 respawns each. Loot is retained. After Thanos dies, random selection waits 20 seconds. Practice tools are disabled.");
         ImGui::Separator(); return;
     }
     if (!ImGui::CollapsingHeader("Local tools", ImGuiTreeNodeFlags_DefaultOpen)) return;

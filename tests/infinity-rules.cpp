@@ -1,9 +1,21 @@
 #include "InfinityRules.h"
+#include "DeathCreditRules.h"
 #include <cassert>
 #include <iostream>
 #include <set>
 int main() {
     using namespace InfinityRules;
+    DeathCreditRules::HandledDeaths credits, otherPlayer;
+    const uint64_t firstLife = (uint64_t(12) << 32) | 42;
+    const uint64_t reusedSlot = (uint64_t(13) << 32) | 42;
+    assert(!credits.Claim(0));
+    assert(credits.Claim(firstLife));
+    assert(!credits.Claim(firstLife)); // repeated death callback cannot credit twice
+    assert(credits.Claim(reusedSlot)); // same UObject slot, new serial/life
+    assert(!credits.Claim(firstLife)); // delayed old-life duplicate after a new life
+    assert(otherPlayer.Claim(firstLife)); // independent player/session ledgers
+    credits = {};
+    assert(credits.Claim(firstLife)); // new session clears the previous claims
     Landing landing;
     assert(!landing.Ready(1, false, 100)); // Skydiving must not start the timer.
     assert(!landing.Ready(1, true, 140));
@@ -75,5 +87,5 @@ int main() {
     assert(selection.Choose({"killer"},random,275)=="killer"); // An empty pool does not restart the timer.
     selection = {}; // A new world must not inherit the previous match's cooldown.
     assert(selection.Choose({"a"},random,0)=="a");
-    std::cout << "PASS: landing and reselection delays, all eligible players in random pool, airborne exclusion, new-life delay, bus timing, 10 respawns, independent budgets, duplicate deaths, failed-spawn retries and disconnect forfeits.\n";
+    std::cout << "PASS: once-per-life kill credit, landing and reselection delays, all eligible players in random pool, airborne exclusion, new-life delay, bus timing, 10 respawns, independent budgets, duplicate deaths, failed-spawn retries and disconnect forfeits.\n";
 }

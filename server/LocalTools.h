@@ -34,7 +34,7 @@ namespace LocalTools {
     }
     void RememberAppearance(AFortPlayerController* controller, bool refresh = false);
     bool IsLocal(AFortPlayerController* controller);
-    bool OnDeath(AFortPlayerController* controller);
+    bool OnDeath(AFortPlayerController* controller, bool& newHandledDeath);
     void Tick(UNetDriver* driver);
     void Execute(AFortPlayerControllerAthena* controller, Action action, int item = 0, int count = 1);
     void Command(AFortPlayerControllerAthena* controller, const std::vector<std::string>& arguments);
