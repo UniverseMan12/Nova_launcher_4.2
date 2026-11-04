@@ -1,13 +1,15 @@
+> **Stable download: [NOVA DROP 0.4.2](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.2).** Release 0.4.3 was withdrawn after movement and reset regressions. Corrective builds are under testing; Auto-Sprint remains experimental. Source on `main` includes the withdrawn changes, so use the stable EXEs or the tagged source ZIP linked below.
+
 # NOVA DROP - Fortnite 4.2 Launcher
 
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*NOVA DROP [0.4.3](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.3) adds Auto-Sprint, improved reset tools, saved cosmetics, larger text and a changelog after updates.*
+*NOVA DROP 0.4.2 is the current stable download, with in-app launcher updates. New gameplay and appearance changes remain under testing.*
 
-## Controls and updates
+## Development controls and updates
 
-Enable **Settings → Auto-Sprint** to sprint while holding **W**. It applies on the next game launch and uses the game’s keyboard input. Turning it off restores the previous sprint binding and toggle preference. Other controls are kept.
+**Auto-Sprint is experimental and has reported movement glitches. Keep it off for normal play.** The following newer controls and changelog describe the development code; they are not all included in the stable 0.4.2 download. Turning Auto-Sprint off takes effect after a full game restart.
 
 Your selected outfit, backpack, pickaxe, glider and emotes are saved outside the version-specific launcher files. The first updated launch imports your previous locker choices. Only cosmetics present in the installed Fortnite 4.2 game can be rendered.
 
@@ -47,7 +49,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For **0.4.3**, choose **[NOVA-DROP-0.4.3-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.3/NOVA-DROP-0.4.3-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.3-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.3/NOVA-DROP-0.4.3-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
+For **0.4.2**, choose **[NOVA-DROP-0.4.2-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.2-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains earlier versions; build packages are produced by the **Build desktop launcher** workflow.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
@@ -76,7 +78,7 @@ For the **source/CMD launchers**, use a **Windows 10/11 x64** PC with internet a
 | **[Git for Windows](https://git-scm.com/install/windows)** | **x64 Setup**. Keep Git available from the command line; the launcher uses it to download the backend. |
 | **[Microsoft Visual C++ Runtime — x64](https://aka.ms/vc14/vc_redist.x64.exe)** | Run the installer and choose Install or Repair if needed. [Microsoft download information](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). |
 | **[Fortnite 4.2 — Google Drive](https://drive.google.com/file/d/1m8VEUcKnxA0UYHt5-txPbRhfbn0OVhEm/view?usp=sharing)** | Download and fully extract the game. Link supplied by the project owner. |
-| **[Launcher — Download ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/heads/main.zip)** | Extract the ZIP, then open the folder containing **START.cmd**. |
+| **[Launcher stable source — Download ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/tags/v0.4.2.zip)** | Extract the ZIP, then open the folder containing **START.cmd**. |
 | [Hamachi](https://vpn.net/) — for multiplayer over the internet | Install on every player's PC and join the same private network. An existing Radmin VPN connection or the same LAN also works with the launcher. |
 | [7-Zip](https://www.7-zip.org/download.html) — optional | Choose **64-bit Windows x64** if you need an extractor for the game archive. |
 | [DirectX legacy runtime](https://www.microsoft.com/en-us/download/details.aspx?id=35) — if needed | Install if the game reports missing legacy DirectX files such as **XINPUT1_3.dll** or **D3DX9_43.dll**. |
@@ -185,7 +187,7 @@ Use `off` instead of `on` to disable a toggle. The message under the buttons rep
 
 Validation on 4.2: server startup, joining through Play, the new tabs, Gauntlet spawning, chest loot, cleanup of tool-spawned pickups, saving/returning to a position and pawn replacement were exercised in a local session. The starter-kit action also returned both weapons and supplies. Full respawn after a real elimination and complete Thanos transformation/abilities still need verification.
 
-**Full reset (exit Thanos)** removes the Gauntlet, restores your normal character and spawns a fresh pawn with 100 health and 100 shield. It clears weapons, supplies and materials while keeping the pickaxe and building tools, and turns automatic refills off. **Clear inventory** clears the same items; if transformed, it also exits Thanos through a fresh respawn. **Respawn me** keeps ordinary equipment but removes the transformation. These tools work on your loopback-connected player in Classic/ordinary Thanos; Infinity Showdown retains its own respawn rules. A match that has already ended must be restarted. Enable **Practice respawn** before dying in a sandbox session.
+**Development reset tools remain under correction and are not verified fixes.** The intended **Full reset (exit Thanos)** behavior removes the Gauntlet, restores your normal character and spawns a fresh pawn with 100 health and 100 shield. It clears weapons, supplies and materials while keeping the pickaxe and building tools, and turns automatic refills off. **Clear inventory** clears the same items; if transformed, it also exits Thanos through a fresh respawn. **Respawn me** keeps ordinary equipment but removes the transformation. These tools work on your loopback-connected player in Classic/ordinary Thanos; Infinity Showdown retains its own respawn rules. A match that has already ended must be restarted. Enable **Practice respawn** before dying in a sandbox session.
 
 ## Setup details
 
