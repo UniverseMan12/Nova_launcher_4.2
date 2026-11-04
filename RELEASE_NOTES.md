@@ -4,6 +4,7 @@
 
 ## Changes in this candidate
 
+- Portable launches use a separate extraction directory for each invocation. Opening the same portable EXE again can no longer let the second launch's cleanup remove files underneath the first launcher. This addresses the reported "session helper stopped unexpectedly" error with missing ICU data; the new package is awaiting the repeat-launch regression check.
 - **Auto-Sprint is explicitly Beta and off by default.** Enabling it requires a warning acknowledgement each time it is turned on. Older enabled profiles without that acknowledgement return to off. Cancel, Escape or a failed settings save leaves it off. The warning names the reported moonwalking, slow movement and airborne shaking.
 - The sprint helper keeps W as movement and uses a separate F12 action. F6 already belongs to Fortnite 4.2 picker/hotbar controls, so it is no longer used. Custom F12 conflicts prevent activation; disabling the beta restores the previous sprint binding and toggle preference. This correction still needs an in-game test.
 - Reset and saved-spot teleports use upright, yaw-only pawn rotations. Complete hero parts are resolved and checked together before changing the character. The last valid normal-appearance snapshot survives incomplete loads or repeated gadget equips, and stale possession acknowledgements cannot overwrite the new pawn. Native inventory cleanup verifies that the Gauntlet was removed. Repeated Thanos/reset behavior remains unconfirmed in-game.

@@ -109,7 +109,7 @@ function handle(name, callback) {
 }
 if (!app.requestSingleInstanceLock()) { app.quit(); }
 else {
-  app.on('second-instance', () => { if (window?.isMinimized()) window.restore(); window?.focus(); });
+  app.on('second-instance', () => { if (hiddenTest) return; if (window?.isMinimized()) window.restore(); window?.focus(); });
   app.on('before-quit', event => {
     if(updater?.state.phase!=='installing')updater?.cancel();
     if (worker && !closing) { event.preventDefault(); closing = true; stop().finally(() => app.quit()); }

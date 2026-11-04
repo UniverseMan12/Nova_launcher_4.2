@@ -82,7 +82,8 @@
       "deleteAppDataOnUninstall": false
     },
     "portable": {
-      "artifactName": "NOVA-DROP-${version}-${arch}-portable.exe"
+      "artifactName": "NOVA-DROP-${version}-${arch}-portable.exe",
+      "unpackDirName": true
     }
   }
 }
