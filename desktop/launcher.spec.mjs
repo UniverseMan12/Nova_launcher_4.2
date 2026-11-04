@@ -10,7 +10,7 @@ test.beforeEach(async () => {
   const env = { ...process.env, LAUNCHER_TEST_DATA: userData, LAUNCHER_TEST_HIDDEN:'1' }; delete env.ELECTRON_RUN_AS_NODE;
   app = await electron.launch({ args: ['.'], env });
   page = await app.firstWindow();
-  await expect(page.locator('#app-version')).toHaveText('0.4.4');
+  await expect(page.locator('#app-version')).toHaveText('0.4.5');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
   expect(await page.locator('.brand img').evaluate(image=>image.naturalWidth)).toBeGreaterThan(256);
@@ -98,15 +98,15 @@ test('upgrade changelog is modal, readable, dismisses once and can be reopened',
   const env={...process.env,LAUNCHER_TEST_DATA:userData,LAUNCHER_TEST_HIDDEN:'1'};delete env.ELECTRON_RUN_AS_NODE;
   app=await electron.launch({args:['.'],env});page=await app.firstWindow();
   await expect(page.locator('#changelog')).toBeVisible();
-  await expect(page.locator('#changelog-version')).toHaveText('VERSION 0.4.4');
-  await expect(page.locator('#changelog-items')).toContainText('Auto-Sprint');
+  await expect(page.locator('#changelog-version')).toHaveText('VERSION 0.4.5');
+  await expect(page.locator('#changelog-items')).toContainText('One-time manual upgrade');
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.screenshot({path:'test-results/launcher-changelog.png'});
   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setSize(940,700));
   expect(await page.locator('#changelog').evaluate(el=>el.scrollWidth<=el.clientWidth)).toBe(true);
   await page.locator('#changelog-done').click();
   await expect(page.locator('#changelog')).not.toBeVisible();
-  expect(JSON.parse(fs.readFileSync(path.join(userData,'release-history.json'),'utf8')).seenVersion).toBe('0.4.4');
+  expect(JSON.parse(fs.readFileSync(path.join(userData,'release-history.json'),'utf8')).seenVersion).toBe('0.4.5');
   await page.reload();await expect(page.locator('#changelog')).not.toBeVisible();
   await page.locator('#open-changelog').click();await expect(page.locator('#changelog')).toBeVisible();
   await page.keyboard.press('Escape');await expect(page.locator('#changelog')).not.toBeVisible();
@@ -127,17 +127,17 @@ test('launcher update preference persists and development builds cannot install'
 
 test('update notification, later, progress and session installation guard are visible', async () => {
   await page.emulateMedia({reducedMotion:'reduce'});
-  await sendUpdate({phase:'available',version:'0.4.5',message:'NOVA DROP 0.4.5 is available.',checkOnStart:true});
+  await sendUpdate({phase:'available',version:'0.4.6',message:'NOVA DROP 0.4.6 is available.',checkOnStart:true});
   await expect(page.locator('#launcher-update')).toBeVisible();
   await expect(page.locator('#update-download')).toBeVisible();
   await expect(page.locator('#update-install')).toBeHidden();
   await page.locator('#update-later').click();
   await expect(page.locator('#launcher-update')).toBeHidden();
   await page.locator('#open-updates').click();
-  await sendUpdate({phase:'downloading',version:'0.4.5',received:25,total:100,message:'Downloading the launcher update...'});
+  await sendUpdate({phase:'downloading',version:'0.4.6',received:25,total:100,message:'Downloading the launcher update...'});
   await expect(page.locator('#update-progress')).toHaveJSProperty('value',25);
   await expect(page.locator('#update-cancel')).toBeVisible();
-  await sendUpdate({phase:'ready',version:'0.4.5',message:'Update downloaded. Install and restart when you are ready.'});
+  await sendUpdate({phase:'ready',version:'0.4.6',message:'Update downloaded. Install and restart when you are ready.'});
   await expect(page.locator('#update-install')).toBeEnabled();
   const busyState={busy:true,phase:'launch',message:'Session running',events:[],addresses:[]};
   await app.evaluate(({BrowserWindow},state)=>BrowserWindow.getAllWindows()[0].webContents.send('launcher:state',state),busyState);

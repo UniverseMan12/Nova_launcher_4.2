@@ -12,7 +12,7 @@ import { ROOT } from '../src/config.js';
 // An optional executable permits a negative run against an older package.
 // Never use the owner's TEMP: old wrappers share a build-wide extraction folder
 // and a duplicate launch can delete files beneath an already-running instance.
-const executable=path.resolve(process.argv[2] || path.join(ROOT,'dist/NOVA-DROP-0.4.4-x64-portable.exe'));
+const executable=path.resolve(process.argv[2] || path.join(ROOT,'dist/NOVA-DROP-0.4.5-x64-portable.exe'));
 assert(fs.statSync(executable).isFile(),'Portable executable is missing.');
 const tempParent=fs.realpathSync(os.tmpdir());
 const temporary=fs.mkdtempSync(path.join(tempParent,'launcher-portable-'));
@@ -88,7 +88,7 @@ try {
   browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
   const context=browser.contexts()[0];
   page=context.pages()[0] || await context.waitForEvent('page');
-  await expect(page.locator('#app-version')).toHaveText('0.4.4');
+  await expect(page.locator('#app-version')).toHaveText('0.4.5');
   await expect(page).toHaveTitle('NOVA DROP');
   await expect(page.locator('#startup')).toBeHidden();
   await expect(page.locator('.brand img')).toHaveJSProperty('complete',true);
@@ -123,7 +123,7 @@ try {
   // actual worker failure rather than only detecting directory damage.
   try {
     await expect(page).toHaveTitle('NOVA DROP');
-    await expect(page.locator('#app-version')).toHaveText('0.4.4');
+    await expect(page.locator('#app-version')).toHaveText('0.4.5');
     await checkWorker('after-duplicate');
   }catch(error){problems.push(error);}
   if(problems.length)throw new AggregateError(problems,'Duplicate portable launch damaged the running launcher or its worker.');

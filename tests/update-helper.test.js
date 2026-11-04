@@ -10,6 +10,29 @@ import {promisify} from 'node:util';
 import {fileHash} from '../desktop/updates.mjs';
 import {launchUpdateHelper} from '../desktop/update-install.mjs';
 
+test('update helper survives the process that spawned it exiting during handoff',{skip:process.platform!=='win32'},async()=>{
+  const root=await fs.mkdtemp(path.join(os.tmpdir(),"nova-parent-exit Ü & apostrophe's-"));
+  try {
+    await fs.writeFile(path.join(root,'new.exe'),'new fixture - never execute');
+    await fs.writeFile(path.join(root,'old.exe'),'old fixture - never execute');
+    await promisify(execFile)(process.execPath,[path.resolve('tests/fixtures/update-exiting-parent.mjs'),root],{
+      cwd:process.cwd(),windowsHide:true,timeout:40000
+    });
+    assert.ok(JSON.parse(await fs.readFile(path.join(root,'parent-exited.json'))).pid);
+    const result=path.join(root,'update-result.json');
+    for(let i=0;i<100;i++){if(await fs.access(result).then(()=>true).catch(()=>false))break;await delay(100);}
+    const receipt=JSON.parse(await fs.readFile(result));
+    assert.equal(receipt.success,false);
+    assert.match(receipt.message,/cancelled.*handoff/);
+    assert.equal(await fs.readFile(path.join(root,'old.exe'),'utf8'),'old fixture - never execute');
+    assert.equal((await fs.readdir(root)).some(name=>name.includes('.nova-')),false);
+  } finally {
+    assert.equal(path.dirname(path.resolve(root)),path.resolve(os.tmpdir()));
+    assert.ok(path.basename(root).startsWith('nova-parent-exit '));
+    await fs.rm(root,{recursive:true,force:true,maxRetries:10,retryDelay:200});
+  }
+});
+
 test('Windows helper becomes ready and honours a cancelled handoff after its parent exits',{skip:process.platform!=='win32'},async()=>{
   const root=await fs.mkdtemp(path.join(os.tmpdir(),"nova-helper Ü & apostrophe's-"));
   const parent=spawn(process.execPath,['-e','setTimeout(()=>{},60000)'],{windowsHide:true,stdio:'ignore'});

@@ -34,7 +34,7 @@ jobs:
       - run: node scripts/release-files.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: NOVA-DROP-0.4.4-Windows-x64
+          name: NOVA-DROP-0.4.5-Windows-x64
           path: |
             dist/*.exe
             dist/SHA256SUMS.txt
@@ -48,10 +48,10 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: NOVA-DROP-0.4.4-unverified-diagnostics
+          name: NOVA-DROP-0.4.5-unverified-diagnostics
           path: |
-            dist/NOVA-DROP-0.4.4-x64-nsis.exe
-            dist/NOVA-DROP-0.4.4-x64-portable.exe
+            dist/NOVA-DROP-0.4.5-x64-nsis.exe
+            dist/NOVA-DROP-0.4.5-x64-portable.exe
             dist/builder-effective-config.yaml
             test-results/
           if-no-files-found: ignore

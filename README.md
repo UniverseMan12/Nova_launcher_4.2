@@ -1,4 +1,4 @@
-> **Latest stable release: [NOVA DROP 0.4.4](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.4).** Corrected sprinting, Thanos transformations and full resets, with more reliable startup and updates. See [release notes](RELEASE_NOTES.md) and [test results](RELEASE_QA.md). The faulty 0.4.3 release was withdrawn.
+> **NOVA DROP 0.4.5 update correction.** Versions 0.4.2–0.4.4 can download an update but may close without installing it. Upgrade once using the [0.4.5 installer or portable download](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.5). Gameplay fixes from 0.4.4 are retained. See [release notes](RELEASE_NOTES.md) and [test results](RELEASE_QA.md).
 
 # NOVA DROP - Fortnite 4.2 Launcher
 
@@ -52,7 +52,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For **0.4.4**, choose **[NOVA-DROP-0.4.4-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.4/NOVA-DROP-0.4.4-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.4-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.4/NOVA-DROP-0.4.4-x64-portable.exe)** to run without installing. Existing 0.4.2/0.4.3 users can use **Launcher updates → Download update → Update and restart**. Earlier releases remain on the [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases), except the withdrawn 0.4.3 release.
+For **0.4.5**, choose **[NOVA-DROP-0.4.5-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.5/NOVA-DROP-0.4.5-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.5-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.5/NOVA-DROP-0.4.5-x64-portable.exe)** to run without installing. Close your old launcher first. Versions 0.4.2–0.4.4 require this one-time manual upgrade to repair their update handoff; settings and game files are retained. Earlier releases remain on the [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases), except the withdrawn 0.4.3 release.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
@@ -63,7 +63,9 @@ For **0.4.4**, choose **[NOVA-DROP-0.4.4-x64-nsis.exe](https://github.com/Univer
 
 The release executables are **unsigned**. See [release checks and known limits](RELEASE_QA.md) before distributing them. The 0.4.2 update feature verifies the download size and SHA-256 against the GitHub release; it is not a publisher signature. The launcher does not modify the firewall.
 
-## Launcher updates — available from 0.4.2
+## Launcher updates — corrected in 0.4.5
+
+**Upgrading from 0.4.2–0.4.4?** Run the new installer once, or replace your portable EXE. Their updater can download the file but loses its helper when the launcher closes. Version 0.4.5 fixes that handoff; it cannot repair code already running in an older version through the same broken path.
 
 Open **Launcher updates** in the sidebar to check whenever you want. The launcher also checks at startup; switch off **Check when the launcher starts** if you prefer manual checks. An available update appears above Play. Choose **Download update**, then **Update and restart** when ready, or **Later** to keep playing. Downloads can be cancelled and a completed, verified package can be installed later.
 
@@ -83,7 +85,7 @@ For the **source/CMD launchers**, use a **Windows 10/11 x64** PC with internet a
 | **[Git for Windows](https://git-scm.com/install/windows)** | **x64 Setup**. Keep Git available from the command line; the launcher uses it to download the backend. |
 | **[Microsoft Visual C++ Runtime — x64](https://aka.ms/vc14/vc_redist.x64.exe)** | Run the installer and choose Install or Repair if needed. [Microsoft download information](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). |
 | **[Fortnite 4.2 — Google Drive](https://drive.google.com/file/d/1m8VEUcKnxA0UYHt5-txPbRhfbn0OVhEm/view?usp=sharing)** | Download and fully extract the game. Link supplied by the project owner. |
-| **[Launcher 0.4.4 — Download source ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/tags/v0.4.4.zip)** | Extract the tagged stable source, then open the folder containing **START.cmd**. |
+| **[Launcher 0.4.5 — Download source ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/tags/v0.4.5.zip)** | Extract the tagged stable source, then open the folder containing **START.cmd**. |
 | [Hamachi](https://vpn.net/) — for multiplayer over the internet | Install on every player's PC and join the same private network. An existing Radmin VPN connection or the same LAN also works with the launcher. |
 | [7-Zip](https://www.7-zip.org/download.html) — optional | Choose **64-bit Windows x64** if you need an extractor for the game archive. |
 | [DirectX legacy runtime](https://www.microsoft.com/en-us/download/details.aspx?id=35) — if needed | Install if the game reports missing legacy DirectX files such as **XINPUT1_3.dll** or **D3DX9_43.dll**. |

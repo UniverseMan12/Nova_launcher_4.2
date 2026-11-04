@@ -3,12 +3,8 @@ import path from 'node:path';
 import {isNewer, versionParts} from './updates.mjs';
 
 export const changes = Object.freeze([
-  {title:'Smooth sprinting, with an optional beta', text:'Manual sprint and Auto-Sprint now pass the movement and gliding playtest. Auto-Sprint stays off by default, with a warning before enabling it in Settings.'},
-  {title:'Thanos and full reset restored', text:'Transform into Thanos normally, then return to your chosen character with Full reset. Repeated resets passed the playtest; multiplayer scoring still needs a separate check.'},
-  {title:'Your outfit, in the match', text:'Selected outfits and equipment carry into the match. Black Knight and Cloud Strike passed the local check; multiplayer still needs testing.'},
-  {title:'More reliable game startup', text:'Portable relaunches keep the running launcher intact. Game-server startup is restored, and unexpected game exits show an error. HUD Scale / Apply passed the latest playtest.'},
-  {title:'Updates checked again before installing', text:'Downloaded updates are checked against the current GitHub release. Withdrawn or changed packages are rejected, and saved launcher settings are protected during writes.'},
-  {title:'A clearer Play screen', text:'Solo stays Solo when you choose Infinity Showdown. Thanos and Showdown share one card, with clearer selections and readable settings.'},
+  {title:'Updates continue after closing', text:'Launcher updates keep installing after NOVA DROP closes and reopen the launcher when finished.'},
+  {title:'One-time manual upgrade', text:'Coming from 0.4.2–0.4.4? Install 0.4.5 manually from GitHub Releases once. Those versions cannot complete this update themselves.'},
 ]);
 
 export class WhatsNew {
