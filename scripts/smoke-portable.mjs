@@ -57,6 +57,9 @@ ConvertTo-Json -InputObject $matches -Compress
 const hash=file=>createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 let browser,page,failure,first;
 async function checkWorker(label) {
+  // A validation failure opens Activity. Return to Settings for each attempt.
+  await page.locator('[data-page="setup"]').click();
+  if(!await page.locator('.advanced').evaluate(details=>details.open))await page.locator('.advanced summary').click();
   await page.locator('#game-path').fill(path.join(temporary,`missing-game-${label}`));
   // Observe a fresh busy -> settled transition, so an earlier error banner
   // cannot make the post-duplicate worker check pass without actually running.
