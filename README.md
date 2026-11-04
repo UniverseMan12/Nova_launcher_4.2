@@ -1,4 +1,4 @@
-> **Latest stable release: [0.4.2](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.2). Development test: 0.4.4.** The faulty 0.4.3 release was withdrawn on November 4, 2026. This branch contains corrective work awaiting in-game confirmation; it is not a new stable release. See [current testing](RELEASE_QA.md).
+> **Latest stable release: [NOVA DROP 0.4.4](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.4).** Corrected sprinting, Thanos transformations and full resets, with more reliable startup and updates. See [release notes](RELEASE_NOTES.md) and [test results](RELEASE_QA.md). The faulty 0.4.3 release was withdrawn.
 
 # NOVA DROP - Fortnite 4.2 Launcher
 
@@ -6,13 +6,13 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*Verified 0.4.4 test-build preview, with the shared Thanos selector, clearer settings and update changelog. Gameplay confirmation is still pending. Stable downloads below point to 0.4.2.*
+*NOVA DROP 0.4.4, with the shared Thanos selector, clearer settings and update changelog.*
 
-## Controls and updates in the 0.4.4 test candidate
+## Controls and updates in 0.4.4
 
-**Settings → Auto-Sprint (Beta)** is off by default. Earlier enabled settings without the new acknowledgement return to off. Every time you enable it, a warning explains the reported moonwalking, slow movement and shaking while gliding; **Keep it off** or Escape leaves it disabled. Enabling the beta takes effect on the next game launch. The owner reports normal movement with Auto-Sprint off; the corrected beta is not yet confirmed working in Fortnite.
+**Settings → Auto-Sprint (Beta)** makes you sprint while holding W, without holding Shift. It is off by default and takes effect on the next game launch. Manual sprint and Auto-Sprint passed the owner's latest playtest, including repeated stopping/starting and gliding. A warning remains before each enable because this is a beta feature; **Keep it off** or Escape leaves it disabled. Earlier enabled settings without acknowledgement return to off.
 
-The candidate keeps W for movement and reserves F12 for the helper's separate sprint action. F6 was rejected because Fortnite 4.2 already uses it for picker/hotbar actions. Conflicting custom F12 bindings prevent activation. Disabling the beta restores the prior sprint binding and toggle preference.
+Auto-Sprint keeps W for movement and reserves F12 for its separate sprint action. Conflicting custom F12 bindings prevent activation. Disabling the beta restores the prior sprint binding and toggle preference.
 
 Your selected outfit, backpack, pickaxe, glider and emotes are saved outside the version-specific launcher files. The first updated launch imports your previous locker choices. Only cosmetics present in the installed Fortnite 4.2 game can be rendered.
 
@@ -20,7 +20,7 @@ After updating, **What’s new** appears once with the changes for the installed
 
 ![The update changelog, with rounded corners and a blurred launcher behind it](docs/launcher-changelog.png)
 
-All **19 hidden desktop UI tests passed** against the current launcher changes, including beta consent, cancellation, settings persistence and layouts at supported window sizes. These checks do not establish correct movement, repeated Thanos resets or HUD Scale / Apply behavior in Fortnite; see [current validation](RELEASE_QA.md).
+Automated checks cover launcher settings, updates, cancellation and layouts. The owner also confirmed selected cosmetics, normal sprinting/gliding, Thanos transformation and two complete resets. HUD Scale → Apply succeeded in the latest test. See [validation and remaining limits](RELEASE_QA.md), including the outstanding two-player comparison.
 
 ## Download the game in the launcher
 
@@ -52,7 +52,7 @@ A launcher for Fortnite 4.2, with local play and private VPN/LAN multiplayer usi
 
 The desktop launcher has Season 4 and Thanos banners and a prominent launch button. Choose **Solo / Host friends / Join friend**, select your game folder, and let the launcher prepare its components. Settings, live activity, host invitations and **Stop session** remain easy to reach. Reduced-motion preferences are respected. Closing the launcher also stops its owned game processes. The existing CMD launchers remain available.
 
-For stable **0.4.2**, choose **[NOVA-DROP-0.4.2-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.2-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.2/NOVA-DROP-0.4.2-x64-portable.exe)** to run without installing. The [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases) retains available earlier versions; build packages are produced by the **Build desktop launcher** workflow. Version 0.4.4 is a test candidate, and the 0.4.3 release and its download assets have been removed.
+For **0.4.4**, choose **[NOVA-DROP-0.4.4-x64-nsis.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.4/NOVA-DROP-0.4.4-x64-nsis.exe)** to install, or **[NOVA-DROP-0.4.4-x64-portable.exe](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/download/v0.4.4/NOVA-DROP-0.4.4-x64-portable.exe)** to run without installing. Existing 0.4.2/0.4.3 users can use **Launcher updates → Download update → Update and restart**. Earlier releases remain on the [Releases page](https://github.com/UniverseMan12/Nova_launcher_4.2/releases), except the withdrawn 0.4.3 release.
 
 1. Open **Play** and click **Download Fortnite 4.2**, or use **Choose folder** if you already have the game. The downloaded installation is selected automatically; an existing installation should contain FortniteGame and Engine.
 2. Choose **Solo**, **Host friends**, or **Join friend**. Join accepts the host's invitation or VPN/LAN IPv4 address.
@@ -71,7 +71,7 @@ Both the Windows installer and portable edition update in place. Settings, the s
 
 Version 0.4.1 and older need one manual upgrade to an updater-enabled build. Future versions still need to be built and published as regular GitHub releases, with both EXEs and **SHA256SUMS.txt**. Only newer regular releases from this repository are offered; prereleases are excluded. No background update service is installed. Source and unpacked development builds do not replace themselves.
 
-The 0.4.4 candidate rechecks the current release and checksum before installing a cached update, so a withdrawn or replaced offer cannot be installed from stale metadata. That final check needs an internet connection; a failed check keeps the current launcher and cached download. The updater does not downgrade an existing 0.4.3 installation to 0.4.2 automatically.
+Version 0.4.4 rechecks the current release and checksum before installing a cached update, so a withdrawn or replaced offer cannot be installed from stale metadata. That final check needs an internet connection; a failed check keeps the current launcher and cached download. The updater never silently downgrades an installation.
 
 ## Installation & downloads
 
@@ -83,7 +83,7 @@ For the **source/CMD launchers**, use a **Windows 10/11 x64** PC with internet a
 | **[Git for Windows](https://git-scm.com/install/windows)** | **x64 Setup**. Keep Git available from the command line; the launcher uses it to download the backend. |
 | **[Microsoft Visual C++ Runtime — x64](https://aka.ms/vc14/vc_redist.x64.exe)** | Run the installer and choose Install or Repair if needed. [Microsoft download information](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist). |
 | **[Fortnite 4.2 — Google Drive](https://drive.google.com/file/d/1m8VEUcKnxA0UYHt5-txPbRhfbn0OVhEm/view?usp=sharing)** | Download and fully extract the game. Link supplied by the project owner. |
-| **[Launcher 0.4.2 — Download source ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/tags/v0.4.2.zip)** | Extract the tagged stable source, then open the folder containing **START.cmd**. |
+| **[Launcher 0.4.4 — Download source ZIP](https://github.com/UniverseMan12/Nova_launcher_4.2/archive/refs/tags/v0.4.4.zip)** | Extract the tagged stable source, then open the folder containing **START.cmd**. |
 | [Hamachi](https://vpn.net/) — for multiplayer over the internet | Install on every player's PC and join the same private network. An existing Radmin VPN connection or the same LAN also works with the launcher. |
 | [7-Zip](https://www.7-zip.org/download.html) — optional | Choose **64-bit Windows x64** if you need an extractor for the game archive. |
 | [DirectX legacy runtime](https://www.microsoft.com/en-us/download/details.aspx?id=35) — if needed | Install if the game reports missing legacy DirectX files such as **XINPUT1_3.dll** or **D3DX9_43.dll**. |
@@ -140,7 +140,7 @@ The HTTP login backend and XMPP stay on each player's own PC; only game traffic 
 
 The host's **Local tools** continue to target the host player. Practice respawn starts **off** in HOST.cmd so normal eliminations can finish a multiplayer match; you can enable it in Reboot for practice. Guests do not receive automatic operator permissions. Keep **Private IPs are operator** off unless you deliberately want to grant those permissions.
 
-Automated checks cover separate player identities, VPN matchmaking addresses, guest startup/cleanup and switching back to local play. The owner reported successful two-player Hamachi gameplay on an earlier build; the current 0.4.4 candidate and remote cosmetics still need a multiplayer playtest. **START.cmd** still starts local play.
+Automated checks cover separate player identities, VPN matchmaking addresses, guest startup/cleanup and switching back to local play. The owner reported successful two-player Hamachi gameplay on an earlier build; remote cosmetics and Showdown's death/reselection flow have not been retested with two players in 0.4.4. **START.cmd** still starts local play.
 
 ## Local tools
 
@@ -192,9 +192,9 @@ Use `off` instead of `on` to disable a toggle. The message under the buttons rep
 
 Validation on 4.2: server startup, joining through Play, the new tabs, Gauntlet spawning, chest loot, cleanup of tool-spawned pickups, saving/returning to a position and pawn replacement were exercised in a local session. The starter-kit action also returned both weapons and supplies. Full respawn after a real elimination and complete Thanos transformation/abilities still need verification.
 
-In the **0.4.4 candidate**, **Full reset (exit Thanos)** is intended to remove the Gauntlet, restore your normal character and spawn a fresh pawn with 100 health and 100 shield. It clears weapons, supplies and materials while keeping the pickaxe and building tools, and turns automatic refills off. **Clear inventory** clears the same items; if transformed, it also exits Thanos through a fresh respawn. **Respawn me** keeps ordinary equipment but removes the transformation. These tools target your loopback-connected player in Classic/ordinary Thanos; Infinity Showdown retains its own respawn rules. A match that has already ended must be restarted. Enable **Practice respawn** before dying in a sandbox session.
+**Full reset (exit Thanos)** removes the Gauntlet, restores your normal character and spawns a fresh pawn with 100 health and 100 shield. It clears weapons, supplies and materials while keeping the pickaxe and building tools, and turns automatic refills off. **Clear inventory** clears the same items; if transformed, it also exits Thanos through a fresh respawn. **Respawn me** keeps ordinary equipment but removes the transformation. These tools target your loopback-connected player in Classic/ordinary Thanos; Infinity Showdown retains its own respawn rules. A match that has already ended must be restarted. Enable **Practice respawn** before dying in a sandbox session.
 
-The candidate keeps reset/teleport pawns upright, validates complete compatible character parts before applying them, preserves the last valid normal-appearance snapshot and ignores possession acknowledgements for an old pawn. Repeated transformation/reset and movement afterward still require an in-game test; they are not marked fixed based on code checks alone.
+Resets and teleports keep characters upright and restore compatible body parts. The owner confirmed two consecutive transformations and full resets with the chosen skin, normal body posture and movement, and no remaining Gauntlet.
 
 ## Setup details
 
@@ -223,7 +223,7 @@ First-time setup needs internet and may take a few minutes. Pinned components ar
 
 If the host shows **Joinable: true**, you can also press **F8** in Fortnite and enter **open 127.0.0.1:7777**. This connects to the existing host; it cannot start a missing server. If Medal also uses F8, its clip notification may appear.
 
-Detailed output is saved in logs/ instead of filling the launcher. Game-log paths are recorded in the helper logs. Fortnite 4.2 uses the shared `%LOCALAPPDATA%\FortniteGame\Saved` directory; the attempted `-UserDir` isolation was removed after the owner test showed it was ignored. Before launch, the launcher backs up and repairs a mismatched borderless startup resolution in the actual settings file, as in stable 0.4.2. It asks you to close other Fortnite windows if that repair is needed. Shared logs are accepted only when their command line matches the current launch. The HUD Scale / Apply crash remains unresolved.
+Detailed output is saved in logs/ instead of filling the launcher. Game-log paths are recorded in the helper logs. Fortnite 4.2 uses the shared `%LOCALAPPDATA%\FortniteGame\Saved` directory. Before launch, the launcher backs up and repairs a mismatched borderless startup resolution in the actual settings file. It asks you to close other Fortnite windows if that repair is needed. Shared logs are accepted only when their command line matches the current launch. HUD Scale → Apply succeeded in the latest owner test; the earlier crash's exact cause remains unproven.
 
 ## Developer commands
 
