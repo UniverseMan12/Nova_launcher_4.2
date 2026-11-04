@@ -6,7 +6,7 @@
 
 ![NOVA DROP with Classic, Thanos and Infinity Showdown](docs/launcher-preview.png)
 
-*NOVA DROP 0.4.4, with the shared Thanos selector, clearer settings and update changelog.*
+*NOVA DROP 0.4.5, with the shared Thanos selector, clearer settings and update changelog.*
 
 ## Controls and updates in 0.4.4
 

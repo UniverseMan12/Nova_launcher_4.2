@@ -2,7 +2,7 @@
 
 ## Status and scope
 
-November 4, 2026: the updater correction is implemented and its local checks pass. Final packaged IPC validation, CI, publication assets and checksum verification are still pending. Do not describe 0.4.5 as fully verified or published on the basis of this document.
+November 4, 2026: the updater correction passed local checks, final packaged IPC validation and Windows CI. Artifact `13362285503` was downloaded and verified against ZIP SHA-256 `acf470a587ed80d04f64c76aafee5bcc07c57fcdf05ce64b7c41a78c93d6de5f`; both EXEs match their included manifest. Publication targets [regular v0.4.5](https://github.com/UniverseMan12/Nova_launcher_4.2/releases/tag/v0.4.5). Exact package hashes and source provenance are in [RELEASE_QA.md](RELEASE_QA.md).
 
 Users running 0.4.2–0.4.4 need to install 0.4.5 manually once. Those versions run the defective handoff code before any downloaded replacement can start, so a corrected release alone cannot fix their existing in-app updater.
 
@@ -35,8 +35,15 @@ The launcher still waits for readiness, rechecks the helper's creation timestamp
 | Old failure reproduced | Initial attached-child regression failed in 6/6 runs; direct attached/detached matrix yielded no working alternative in 54 probes. |
 | Independent bootstrap lifetime | Isolated .NET-bootstrap probe survived exit of the actual Electron main process. |
 | Local automated suite | All 92 Node/helper checks passed, including actual spawning-parent exit; the old implementation fails the new comparison. |
-| Packaged in-app update | A replacement smoke test is being added to invoke the packaged launcher's actual update IPC and then let that launcher exit. Final result pending. |
-| Final Windows CI and artifacts | Pending. No 0.4.5 workflow, artifact digest or executable hash is asserted here. |
+| Local UI checks | All 19 tests passed, including the revised changelog and update controls. |
+| Packaged in-app update | Current 0.4.5 portable and NSIS packages passed their own check/download/install IPC, real initiating Electron exit, helper survival and automatic restart. A debugger supplies only a simulated older starting version and release feed; the packaged handoff is unchanged. Separate real 0.4.2 file-replacement compatibility tests also passed using the corrected helper. |
+| Final Windows CI | Source `3e25465bb51b7618ce9529363357d3a530c70493` passed desktop `41906951181` / job `126844054951` and standalone `41906951876` / job `126844056294`: 92 code checks, 19 UI tests, 860 payload files, packaged startup, repeated portable launches and all four update cases. |
 | Gameplay | Native baseline unchanged; no new Fortnite session was controlled for this updater task. Existing 0.4.4 owner evidence retains its original scope. |
 
-Release qualification still requires the packaged portable and installed update paths to complete after the real initiating launcher exits, with the expected target version/hash, retained settings and a functioning restarted runtime/worker. Final source, run IDs and verified asset hashes must be recorded after those checks pass. Old installed copies still require the manual first upgrade regardless of the new candidate's test results.
+Both formats completed after the real initiating launcher exited, with the expected target version/hash, retained settings and a functioning restarted runtime/worker. Old installed copies still require the manual first upgrade; a new package cannot fix the handoff already running inside the old launcher.
+
+## First CI attempt and path-length correction
+
+Initial source `fa5ccca` passed replacement and automatic restart, but its portable worker probe failed. The expanded test-case directory made extraction paths exceed the Windows portable extractor's limit. A local hidden portable control reproduced 17 missing files out of 860 with paths up to 264 characters and an `ENOENT` before workspace preparation. Shortening the case label while retaining the same Unicode, spaces, ampersand and apostrophe produced all 860 files and a successful worker check (maximum source path 235 characters). The unpacked-worker control also passed, isolating extraction as the issue.
+
+Commit `3e25465` changes only that test fixture's directory length and preserves detailed IPC/stdout/stderr/path diagnostics on failure. No product validation was removed and the updater implementation is unchanged. The final CI passed all four cases. Arbitrarily long Windows installation/TEMP paths are not claimed supported. Evidence remains under ignored `build/portable-path-evidence-31dXO4/`.

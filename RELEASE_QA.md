@@ -1,12 +1,16 @@
 # Desktop release checks
 
-## NOVA DROP 0.4.5 — updater correction, verification in progress
+## NOVA DROP 0.4.5 — updater correction
 
 ### Current status — November 4, 2026
 
 **The in-app update path in 0.4.2–0.4.4 is broken. A one-time manual installation of 0.4.5 is required for those versions.** Three owner update attempts downloaded the verified 0.4.4 installer and reached the ready/apply handoff, but produced no result and left the installed launcher at 0.4.2. The old launcher terminates its updater when it closes; downloading a corrected package does not repair the running old launcher.
 
-The 0.4.5 candidate starts the updater through a separate hidden bootstrap and retains readiness, consent, checksum and process-identity guards. All **92 local Node/helper checks passed**, including the regression that lets the actual spawning parent exit; the old implementation fails that comparison. Independent isolated probes confirmed that the bootstrap survives exit of the actual Electron main process. Final packaged IPC coverage, CI, release packages and their checksums remain **pending**. These local results are not a completed 0.4.5 release qualification. Detailed evidence and remaining checks are in [AUDIT_045.md](AUDIT_045.md).
+Version 0.4.5 starts the updater through a separate hidden bootstrap and retains readiness, consent, checksum and process-identity guards. All **92 Node/helper checks and 19 UI tests passed locally and in CI**, including the regression that lets the actual spawning parent exit; the old implementation fails that comparison. Final source `3e25465bb51b7618ce9529363357d3a530c70493` passed [desktop workflow 41906951181](https://github.com/UniverseMan12/Nova_launcher_4.2/actions/runs/41906951181), job `126844054951`, and standalone `41906951876`, job `126844056294`.
+
+All four update scenarios passed. The current packaged launcher performs its own check/download/install IPC, exits, and restarts automatically in both portable and NSIS formats; only its reported starting version and release feed are simulated. Its actual updater/helper are unmodified. Separate old-file compatibility tests replace real 0.4.2 files using the corrected helper. Those tests do **not** claim that the faulty 0.4.2 updater works. Each scenario verifies the restarted runtime/worker, retained settings and unusual path characters. Staged-package startup, repeated portable launches and all 860 payload files also passed. Details are in [AUDIT_045.md](AUDIT_045.md).
+
+Verified artifact `13362285503`: ZIP SHA-256 `acf470a587ed80d04f64c76aafee5bcc07c57fcdf05ce64b7c41a78c93d6de5f`; installer SHA-256 `41430d84b81bcff334411a010761f54235b8830418bec18c7a8aab61ec2412f2`; portable SHA-256 `d6276f5998515319691b13a9e4d3dee09d1b91d569515a355ca7d19af884c8f4`. Both downloaded executables match the included manifest. Receipt: ignored `build/verified-build-045.json`. The final changelog preview was inspected; subsequent source changes update release documentation and README previews only.
 
 **Correction to historical update claims below:** earlier automated update tests started the helper from a separate, long-running test Node process. They verified replacement, restart and retained settings, but did not exercise the old launcher's own handoff followed by its exit. Their passes therefore did not establish that in-app updates worked. The gameplay, native-build, package-integrity and other independently scoped results remain valid.
 
