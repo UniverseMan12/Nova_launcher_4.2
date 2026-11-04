@@ -39,19 +39,20 @@ function withinTemporary(candidate) {
   const relative=path.relative(temporary,path.resolve(candidate));
   return relative!=='' && relative!=='..' && !relative.startsWith('..'+path.sep) && !path.isAbsolute(relative);
 }
-function extractedRuntime() {
-  // Both the legacy build-wide directory and unique NSIS plugin/app directories
-  // are at most two levels below this test's dedicated TEMP.
-  const queue=[{directory:extraction,depth:0}],matches=[];
-  for(let i=0;i<queue.length;i++) {
-    const {directory,depth}=queue[i];
-    if(fs.existsSync(path.join(directory,'icudtl.dat')) && fs.existsSync(path.join(directory,'resources','worker','worker.mjs')))matches.push(directory);
-    if(depth===2)continue;
-    for(const entry of fs.readdirSync(directory,{withFileTypes:true}))if(entry.isDirectory()&&!entry.isSymbolicLink())queue.push({directory:path.join(directory,entry.name),depth:depth+1});
-  }
-  assert.equal(matches.length,1,'Expected exactly one initial runtime under the test-owned TEMP.');
+async function extractedRuntime(wrapperPid) {
+  // NSIS can keep both a staging copy and the running app under its private
+  // TEMP. Identify the actual Electron child instead of guessing from folders.
+  assert(Number.isSafeInteger(wrapperPid)&&wrapperPid>0);
+  const {stdout}=await promisify(execFile)('powershell.exe',['-NoProfile','-NonInteractive','-Command',`
+$matches=@(Get-CimInstance Win32_Process | Where-Object {
+  $_.ParentProcessId -eq [int]$env:NOVA_TEST_WRAPPER -and $_.Name -eq 'NOVA DROP.exe' -and $_.CommandLine -notmatch '(?:^|\\s)--type(?:=|\\s)'
+} | Select-Object -ExpandProperty ExecutablePath)
+ConvertTo-Json -InputObject $matches -Compress
+`],{windowsHide:true,timeout:15000,env:{...process.env,NOVA_TEST_WRAPPER:String(wrapperPid)}});
+  const matches=JSON.parse(stdout.trim());
+  assert.equal(matches.length,1,'Expected exactly one Electron main owned by the portable wrapper.');
   assert(withinTemporary(matches[0]),'Runtime escaped the test directory.');
-  return matches[0];
+  return path.dirname(matches[0]);
 }
 const hash=file=>createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 let browser,page,failure,first;
@@ -100,7 +101,7 @@ try {
   await page.locator('[data-page="setup"]').click();
   await page.locator('.advanced summary').click();
   await checkWorker('before-duplicate');
-  const runtime=extractedRuntime();
+  const runtime=await extractedRuntime(first.child.pid);
   const runtimeFiles=['NOVA DROP.exe','icudtl.dat','resources.pak','resources/worker/worker.mjs'].map(name=>path.join(runtime,name));
   const originalHashes=runtimeFiles.map(hash);
 
